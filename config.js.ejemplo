@@ -19,10 +19,11 @@
    ========================================================================== */
 
 window.FB_CONFIG = {
-  apiKey:            "PEGAR-ACÁ",
-  authDomain:        "tu-proyecto.firebaseapp.com",
-  projectId:         "tu-proyecto",
-  storageBucket:     "tu-proyecto.firebasestorage.app",
-  messagingSenderId: "000000000000",
-  appId:             "1:000000000000:web:0000000000000000000000"
+ apiKey: "AIzaSyBD28JJo9I2YalwZTJ41tLV_6NLUx1ymeA",
+  authDomain: "app-planificacion-industrial.firebaseapp.com",
+  projectId: "app-planificacion-industrial",
+  storageBucket: "app-planificacion-industrial.firebasestorage.app",
+  messagingSenderId: "675416913545",
+  appId: "1:675416913545:web:c679295febe97ad38c7858",
+  measurementId: "G-HJ477WDKVP"
 };
