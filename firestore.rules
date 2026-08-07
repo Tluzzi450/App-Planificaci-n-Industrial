@@ -1,0 +1,47 @@
+rules_version = '2';
+
+/* Reglas de seguridad de Firestore para el Planificador.
+ *
+ * Sin estas reglas, cualquiera podría leer el progreso de todos los estudiantes.
+ * Copialas tal cual en la consola de Firebase:
+ *     Firestore Database -> Reglas -> pegar -> Publicar
+ *
+ * La app guarda un único documento por estudiante, en usuarios/{uid}, así:
+ *     { version: 1, datos: "<JSON como texto>", actualizado: "...", dispositivo: "..." }
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Las funciones tienen que vivir adentro del match, no en la raíz del archivo.
+    function esDuenio(uid) {
+      // request.auth.uid lo completa Firebase al validar el token de sesión:
+      // no se puede falsear desde el navegador.
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function soloCamposEsperados() {
+      return request.resource.data.keys().hasOnly(['version', 'datos', 'actualizado', 'dispositivo'])
+          && request.resource.data.version is int
+          && request.resource.data.datos is string;
+    }
+
+    // El progreso de una carrera entera son unos pocos kilobytes. Un techo de
+    // 512 KB deja margen de sobra y evita que usen el proyecto como depósito.
+    function tamanioRazonable() {
+      return request.resource.data.datos.size() < 512 * 1024;
+    }
+
+    match /usuarios/{uid} {
+      allow read:  if esDuenio(uid);
+      allow write: if esDuenio(uid) && soloCamposEsperados() && tamanioRazonable();
+    }
+
+    /* Todo lo demás queda cerrado. Firestore ya deniega por omisión; esto lo deja
+       escrito, para que una colección agregada más adelante no quede abierta sin
+       que nadie lo note. (Las reglas se combinan con OR, así que esto no pisa el
+       permiso de arriba.) */
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}
