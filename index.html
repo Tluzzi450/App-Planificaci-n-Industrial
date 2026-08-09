@@ -143,6 +143,12 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .card .nom{font-weight:700;font-size:13.5px;color:var(--petrol)}
 .card .fila-chips{display:flex;gap:5px;flex-wrap:wrap}
 .card.bloqueada{opacity:.75;background:var(--hover)}
+/* La nota va abajo a la derecha: align-self la manda al borde porque la tarjeta
+   es un flex en columna, y margin-top:auto la pega al piso aunque la tarjeta
+   quede más alta que sus vecinas de la misma fila. */
+.card .nota-final{align-self:flex-end;margin-top:auto;font-size:11.5px;font-weight:700;
+  color:var(--muted);display:flex;align-items:baseline;gap:5px}
+.card .nota-final b{font-size:15px;font-weight:800;color:var(--verde-txt);line-height:1}
 /* ---------- modal ---------- */
 .velo{position:fixed;inset:0;background:rgba(0,40,55,.45);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:30px 14px;overflow:auto}
 .velo.abierto{display:flex}
@@ -204,6 +210,25 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .ev-fila.pronto{border-left:4px solid var(--ambar)}
 .sec-tit{color:var(--petrol);font-size:15px;font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 .sec-tit small{color:var(--gris);font-weight:600;font-size:12px}
+/* ---------- pestaña Instalar ---------- */
+.inst-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
+  padding:20px 22px;box-shadow:var(--sombra);max-width:620px}
+.inst-caja h3{color:var(--petrol);font-size:16px;margin:0 0 6px}
+.inst-caja p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 14px}
+.inst-caja p:last-child{margin-bottom:0}
+.inst-btn{display:inline-flex;align-items:center;gap:9px;border:none;border-radius:10px;
+  background:var(--marca);color:#fff;font-weight:800;font-size:15px;padding:13px 22px;transition:.15s}
+.inst-btn:hover{background:#00344a;transform:translateY(-1px)}
+.inst-pasos{list-style:none;counter-reset:p;margin:0}
+.inst-pasos li{counter-increment:p;position:relative;padding:9px 0 9px 38px;
+  border-top:1px solid var(--linea);font-size:13.5px;line-height:1.55;color:var(--texto)}
+.inst-pasos li:first-child{border-top:none}
+.inst-pasos li::before{content:counter(p);position:absolute;left:0;top:9px;width:24px;height:24px;
+  border-radius:50%;background:var(--suave);color:var(--petrol);font-weight:800;font-size:12px;
+  display:flex;align-items:center;justify-content:center}
+.inst-ok{display:flex;align-items:center;gap:10px;background:#eef8dc;border:1px solid #cfe8a2;
+  color:var(--verde-txt);border-radius:10px;padding:14px 18px;font-weight:700;font-size:14px;max-width:620px}
+html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:#bde08a}
 /* ---------- pin de eventos inminentes ---------- */
 .pin-caja{background:var(--blanco);border:1px solid var(--rojo);border-left:5px solid var(--rojo);
   border-radius:11px;padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra)}
@@ -407,6 +432,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <button data-vista="materias" class="activa">Materias</button>
     <button data-vista="grilla">Armar horario</button>
     <button data-vista="eventos">Eventos próximos<span id="badgeEventos" class="badge" hidden></span></button>
+    <button data-vista="instalar" id="tabInstalar">Instalar App</button>
     <button data-vista="agenda">Agenda<span id="badgeAgenda" class="badge" hidden></span></button>
     <button data-vista="mapa">Mapa de correlativas</button>
     <button data-vista="simulador">Simulador de carrera</button>
@@ -462,6 +488,12 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
         <div class="res-choques" id="resChoques"></div>
       </div>
     </div>
+  </div>
+
+  <div id="vista-instalar" hidden>
+    <h2>Instalar la app</h2>
+    <p style="margin-bottom:16px;color:var(--muted);max-width:860px">Se instala desde el navegador, sin pasar por ninguna tienda. Queda con ícono propio, ocupa la pantalla completa y funciona sin internet.</p>
+    <div id="instCont"></div>
   </div>
 
   <div id="vista-eventos" hidden>
@@ -529,7 +561,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.20260804.653f04ab · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.09 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -709,7 +741,7 @@ const $$ = s => [...document.querySelectorAll(s)];
 let vista="materias";
 $$(".nav-int button").forEach(b=>b.onclick=()=>{ vista=b.dataset.vista;
   $$(".nav-int button").forEach(x=>x.classList.toggle("activa",x===b));
-  ["materias","grilla","eventos","agenda","mapa","simulador","avance"].forEach(v=>$("#vista-"+v).hidden=v!==vista);
+  ["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"].forEach(v=>$("#vista-"+v).hidden=v!==vista);
   render(); });
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("ver"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("ver"),2600); }
 
@@ -750,6 +782,15 @@ function pasaFiltro(m){
   if (filtro==="pendientes") return !aprobada(m.o);
   return true;
 }
+/* Nota final en la tarjeta, sólo si la materia está aprobada Y tiene nota cargada.
+   Sin nota no se muestra nada: un "Nota final: —" suelto parecería un error. */
+function notaTarjetaHTML(o){
+  if(!aprobada(o)) return "";
+  const n=ST.notas[o];
+  if(n==null) return "";
+  return `<div class="nota-final">Nota final: <b>${n}</b></div>`;
+}
+
 function renderMaterias(){
   const cont=$("#contMaterias"); cont.innerHTML="";
   const grupos=NIVELES.map(n=>({tit:`Nivel ${romano(n)}`,ms:MATERIAS.filter(m=>!m.electiva&&m.nivel===n)}));
@@ -774,7 +815,8 @@ function renderMaterias(){
       const card=document.createElement("div");
       card.className="card"+((["sin","desaprobada"].includes(e)&&!puedeCursar(m.o))?" bloqueada":"");
       card.innerHTML=`<div class="tit"><span class="orden">${m.electiva?"E":m.o}</span><span class="nom">${m.nombre}</span></div>
-        <div class="fila-chips"><span class="pill ${ESTADOS[e].cls}">${ESTADOS[e].txt}</span>${chipEstadoDerivado(m)}</div>`;
+        <div class="fila-chips"><span class="pill ${ESTADOS[e].cls}">${ESTADOS[e].txt}</span>${chipEstadoDerivado(m)}</div>
+        ${notaTarjetaHTML(m.o)}`;
       card.onclick=()=>abrirModal(m.o);
       grid.appendChild(card);
     }
@@ -2138,7 +2180,7 @@ function abrirModalExamen(id){
     // si el examen se cargó desde "Eventos próximos", no lo saco de esa pestaña
     if(vista!=="eventos") vista="agenda";
     $$(".nav-int button").forEach(x=>x.classList.toggle("activa",x.dataset.vista===vista));
-    ["materias","grilla","eventos","agenda","mapa","simulador","avance"].forEach(v=>$("#vista-"+v).hidden=v!==vista);
+    ["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"].forEach(v=>$("#vista-"+v).hidden=v!==vista);
     render();
     toast(e?"Examen actualizado":"Examen agregado a tu agenda");
   };
@@ -2289,6 +2331,18 @@ const FB_VER = "10.12.2";
 const CLAVE_SYNC = "planificador-sync-activo";
 const syncConfigurado = () => !!(FB_CONFIG && FB_CONFIG.apiKey);
 const syncPosible = () => syncConfigurado() && /^https?:$/.test(location.protocol);
+
+/* Navegadores incrustados de WhatsApp, Instagram, Facebook, etc. Importa porque
+   el enlace se comparte por ahí: adentro de esos visores no se puede instalar la
+   app ni suele abrirse la ventana de Google. */
+const navegadorIncrustado = () =>
+  /FBAN|FBAV|Instagram|Line\/|MicroMessenger|Twitter|TikTok/i.test(navigator.userAgent) ||
+  (/Android/.test(navigator.userAgent) && /; wv\)/.test(navigator.userAgent));
+
+/* Empieza a bajar el SDK apenas se abre el login, sin esperar el resultado.
+   Sin esto, al tocar "Continuar con Google" el navegador tendría que esperar la
+   descarga, para entonces ya perdió el gesto del usuario y bloquea la ventana. */
+const precargarSync = () => { if (syncPosible()) cargarFirebase().catch(()=>{}); };
 let FB=null, usuario=null, cortarEscucha=null, aplicandoRemoto=false, tPush=null, ultimaSync=null;
 
 async function cargarFirebase(){
@@ -2402,6 +2456,10 @@ const ERRORES_FB={
   "auth/network-request-failed":"Sin conexión: revisá internet.",
   "auth/unauthorized-domain":"Este dominio no está autorizado en Firebase (Authentication → Settings → Authorized domains).",
   "auth/operation-not-allowed":"Ese método de acceso no está habilitado en Firebase.",
+  "auth/popup-blocked":"El navegador bloqueó la ventana de Google. Permití las ventanas emergentes para este sitio, o entrá con correo y contraseña.",
+  "auth/popup-closed-by-user":"Se cerró la ventana de Google antes de terminar. Probá de nuevo.",
+  "auth/cancelled-popup-request":"Quedó otra ventana de acceso abierta. Cerrala y probá de nuevo.",
+  "auth/internal-error":"Google no pudo completar el acceso. Probá de nuevo, o entrá con correo y contraseña.",
   "app/sin-respuesta":"La nube no responde. Suele pasar cuando falta crear la base de datos Firestore en el proyecto, o si estás sin internet.",
   "permission-denied":"El servidor rechazó el acceso: revisá las reglas de seguridad de Firestore.",
   "unavailable":"Sin conexión con la nube. Tus cambios quedan guardados en este dispositivo y se sincronizan al volver.",
@@ -2466,14 +2524,10 @@ function abrirModalSync(){
     <p style="font-size:12px;color:var(--muted);margin-top:14px">Solo vos podés ver tus datos: quedan asociados a tu cuenta y nadie más los puede leer.</p>`;
   const err=$("#syncError"), fallar=e=>{ err.textContent="⚠ "+explicar(e); err.style.display="block"; };
   const mail=()=>$("#syncMail").value.trim(), pass=()=>$("#syncPass").value;
+  // igual que en la pantalla de login: sin redirección (ver comentario allá)
   $("#syncGoogle").onclick=async()=>{ try{
       const {A,auth}=await cargarFirebase(); const prov=new A.GoogleAuthProvider();
-      try{ await A.signInWithPopup(auth,prov); }
-      catch(e){
-        if (["auth/popup-blocked","auth/operation-not-supported-in-this-environment","auth/popup-closed-by-user"].includes(e.code))
-          await A.signInWithRedirect(auth,prov);      // celulares y ventanas bloqueadas
-        else throw e;
-      }
+      await A.signInWithPopup(auth,prov);
       cerrarModal();
     }catch(e){ fallar(e); } };
   $("#syncEntrar").onclick=async()=>{ try{
@@ -2499,6 +2553,13 @@ const cerrarLogin = () => $("#pantallaLogin").classList.remove("abierta");
 function abrirLogin(){
   $("#lgError").style.display="none";
   $("#pantallaLogin").classList.add("abierta");
+  precargarSync();
+  // aviso cuando se entró desde el visor de WhatsApp/Instagram y no desde el navegador
+  if (navegadorIncrustado()){
+    const e=$("#lgError");
+    e.textContent="Estás viendo esto dentro de otra aplicación. Para entrar con Google y poder instalar el planificador, abrilo en Chrome o Safari (menú ⋮ → \"Abrir en el navegador\").";
+    e.style.display="block";
+  }
   setTimeout(()=>{ const i=$("#lgMail"); if(i && innerWidth>860) i.focus(); }, 60);
 }
 (function conectarLogin(){
@@ -2515,14 +2576,15 @@ function abrirLogin(){
 
   $("#lgOjo").onclick=()=>{ const i=$("#lgPass"); i.type = i.type==="password" ? "text" : "password"; };
   $("#lgSaltear").onclick=()=>{ try{ localStorage.setItem(CLAVE_LOGIN_VISTO,"1"); }catch(e){} cerrarLogin(); };
+  /* Sólo ventana emergente, nunca redirección. Desde junio de 2024 el acceso por
+     redirección no vuelve autenticado en los navegadores que bloquean cookies de
+     terceros (Chrome 115+, Firefox 109+, Safari 16.1+), salvo que el sitio esté
+     alojado en Firebase Hosting. Este está en GitHub Pages, así que la
+     redirección dejaría al estudiante dando vueltas sin entrar nunca.
+     Ver: firebase.google.com/docs/auth/web/redirect-best-practices (opción 2). */
   $("#lgGoogle").onclick=async()=>{ try{
       const {A,auth}=await persistencia(); const prov=new A.GoogleAuthProvider();
-      try{ await A.signInWithPopup(auth,prov); }
-      catch(e){
-        if (["auth/popup-blocked","auth/operation-not-supported-in-this-environment","auth/popup-closed-by-user"].includes(e.code))
-          await A.signInWithRedirect(auth,prov);
-        else throw e;
-      }
+      await A.signInWithPopup(auth,prov);
       listo();
     }catch(e){ fallar(e); } };
   $("#lgEntrar").onclick=async()=>{ try{
@@ -2574,6 +2636,7 @@ function render(){
   actualizarBadge();
   if (vista==="materias") renderMaterias();
   if (vista==="grilla") renderGrilla();
+  if (vista==="instalar") renderInstalar();
   if (vista==="eventos") renderEventos();
   if (vista==="agenda") renderAgenda();
   if (vista==="mapa") renderMapa();
@@ -2582,7 +2645,77 @@ function render(){
 }
 cargar(); aplicarTema(temaActual()); render();
 
-/* ================= PWA: instalación y actualizaciones =================
+/* ================= PWA: instalación desde la propia app =================
+   Android y escritorio avisan con beforeinstallprompt que se puede instalar. Se
+   guarda el evento para dispararlo después, cuando el usuario toque el botón:
+   el navegador exige un gesto suyo. iOS no tiene nada equivalente, así que ahí
+   sólo se pueden dar las instrucciones. */
+let promptInstalar = null;
+addEventListener("beforeinstallprompt", ev => {
+  ev.preventDefault();                 // frena el cartel automático del navegador
+  promptInstalar = ev;
+  if (vista === "instalar") renderInstalar();
+});
+addEventListener("appinstalled", () => { promptInstalar = null; renderInstalar(); });
+
+const yaInstalada = () =>
+  matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const esIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);   // iPad moderno
+const esSafari = () => /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+
+function renderInstalar(){
+  const c = $("#instCont"); if(!c) return;
+  const pasos = ls => `<ol class="inst-pasos">${ls.map(l=>`<li>${l}</li>`).join("")}</ol>`;
+
+  if (yaInstalada())
+    return void (c.innerHTML = `<div class="inst-ok">✅ Ya la estás usando como app instalada.</div>`);
+
+  if (!/^https?:$/.test(location.protocol))
+    return void (c.innerHTML = `<div class="inst-caja"><h3>Abrila desde el enlace</h3>
+      <p>Estás viendo el archivo descargado. Para instalarla hace falta entrar por la dirección web del planificador.</p></div>`);
+
+  if (navegadorIncrustado())
+    return void (c.innerHTML = `<div class="inst-caja"><h3>Abrila en el navegador</h3>
+      <p>Estás dentro del visor de una app de mensajería, que no permite instalar. Tocá el menú de esta ventana y elegí «Abrir en el navegador», o copiá la dirección y pegala en Chrome o Safari.</p></div>`);
+
+  if (promptInstalar) {                                  // Android y escritorio: un toque
+    c.innerHTML = `<div class="inst-caja">
+      <h3>Listo para instalar</h3>
+      <p>Tocá el botón y confirmá. Después vas a poder abrir el planificador desde el ícono, sin pasar por el navegador.</p>
+      <button class="inst-btn" id="btnInstalarYa">⬇ Instalar App</button></div>`;
+    $("#btnInstalarYa").onclick = async () => {
+      const ev = promptInstalar; if(!ev) return;
+      promptInstalar = null;                             // el evento sirve una sola vez
+      ev.prompt();
+      const { outcome } = await ev.userChoice;
+      if (outcome === "accepted") toast("Instalando…");
+      else { toast("Instalación cancelada"); promptInstalar = ev; }   // si cancela, se puede reintentar
+      renderInstalar();
+    };
+    return;
+  }
+
+  if (esIOS())
+    return void (c.innerHTML = `<div class="inst-caja"><h3>En iPhone o iPad</h3>` +
+      (esSafari()
+        ? `<p>Apple no permite que una página se instale sola, así que son tres toques a mano:</p>` +
+          pasos(["Tocá el botón <b>Compartir</b>, el cuadrado con la flecha hacia arriba.",
+                 "Bajá en la lista y elegí <b>Agregar a pantalla de inicio</b>.",
+                 "Confirmá con <b>Agregar</b>: el ícono queda entre tus apps."]) +
+          `<p style="margin-top:14px">Al abrirla la primera vez la vas a ver vacía. No se perdió nada: entrá con tu cuenta y vuelve tu progreso.</p>`
+        : `<p>Para instalarla en iPhone tenés que abrir esta dirección con <b>Safari</b>. Desde este navegador la opción no aparece, y es una limitación de Apple, no de la app.</p>`) +
+      `</div>`);
+
+  c.innerHTML = `<div class="inst-caja"><h3>Desde el menú del navegador</h3>
+    <p>Tu navegador todavía no ofreció la instalación. Suele aparecer después de usar la app un rato, pero podés forzarla a mano:</p>` +
+    pasos(["Abrí el menú del navegador, el de los tres puntos o las tres rayas.",
+           "Buscá <b>Instalar aplicación</b> o <b>Agregar a pantalla principal</b>.",
+           "Confirmá y listo."]) +
+    `<p style="margin-top:14px">Si no aparece por ningún lado, probá con Chrome en Android o Safari en iPhone: Firefox de escritorio no permite instalar.</p></div>`;
+}
+
+/* ================= PWA: registro y actualizaciones =================
    Sólo corre servido por http(s); como archivo suelto no hay service worker. */
 if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   addEventListener("load", ()=>{
@@ -2612,7 +2745,7 @@ function avisarActualizacion(reg){
 /* Atajos del ícono de la pantalla de inicio: ?v=eventos abre esa pestaña directo. */
 (function(){
   const v=new URLSearchParams(location.search).get("v");
-  const valida=["materias","grilla","eventos","agenda","mapa","simulador","avance"];
+  const valida=["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"];
   if(!v || !valida.includes(v)) return;
   const b=document.querySelector(`.nav-int button[data-vista="${v}"]`);
   if(b) b.click();
