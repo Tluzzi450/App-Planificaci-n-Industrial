@@ -11,17 +11,17 @@
  *
  * Al publicar una versión nueva: cambiá VERSION. Eso descarta la caché vieja.
  */
-const VERSION = "2026.08.09";
+const VERSION = "2026.08.10";
 const CACHE = "planificador-industrial-" + VERSION;
 
 const ESENCIALES = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/icon-maskable-512.png",
-  "./icons/apple-touch-icon.png",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon-maskable-512.png",
+  "./apple-touch-icon.png",
 ];
 
 self.addEventListener("install", ev => {

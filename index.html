@@ -13,9 +13,9 @@
      por ejemplo desde GitHub Pages. Abierto como archivo suelto no molestan. -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#00455C">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Planificador">
@@ -108,6 +108,16 @@ nav{background:var(--marca)}
 .nav-int button{background:none;border:none;color:#bcd6e0;font-weight:700;font-size:14px;padding:12px 18px;border-bottom:3px solid transparent;white-space:nowrap}
 .nav-int button:hover{color:#fff}
 .nav-int button.activa{color:#fff;border-bottom-color:var(--ambar)}
+/* ---------- solapas reordenables ---------- */
+.nav-int button[data-vista]{cursor:grab;user-select:none;-webkit-user-select:none;
+  -webkit-touch-callout:none;touch-action:pan-x}
+.nav-int button.arrastrando{opacity:.55;cursor:grabbing;background:rgba(255,255,255,.14);
+  border-radius:9px 9px 0 0;transform:scale(1.04)}
+.nav-int.reordenando{cursor:grabbing}
+.nav-int.reordenando button[data-vista]{touch-action:none}
+#resetOrden{color:#8fb4c4;font-size:15px;padding:12px 14px;flex:none;align-self:center;
+  background:none;border:none;line-height:1}
+#resetOrden:hover{color:#fff}
 main{max-width:1280px;margin:0 auto;padding:20px 18px 60px}
 h2{color:var(--petrol);font-size:20px;font-weight:800;margin:6px 0 14px}
 h3{color:var(--petrol);font-size:15px;font-weight:700}
@@ -437,6 +447,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <button data-vista="mapa">Mapa de correlativas</button>
     <button data-vista="simulador">Simulador de carrera</button>
     <button data-vista="avance">Mi avance</button>
+    <button id="resetOrden" title="Volver al orden original de las solapas" hidden>↺</button>
   </div></nav>
 </header>
 <main>
@@ -561,7 +572,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.09 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.10 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -687,6 +698,7 @@ const CLAVE="planificador-"+CARRERA.slug+"-frh-v1";
 let ST = {version:1, estados:{}, notas:{}, aplazos:{}, grilla:{}, sim:{asumir:true, anios:[]}, manuales:[], horarios:null, examenes:[], _mseq:0, _eseq:0};
 function cargar(){ try{ const raw=localStorage.getItem(CLAVE); if(raw){ const d=JSON.parse(raw); if(d&&d.version===1){ ST={...ST,...d};
   if(!Array.isArray(ST.manuales)) ST.manuales=[]; if(!ST.notas) ST.notas={}; if(!ST.aplazos) ST.aplazos={};
+  if(!Array.isArray(ST.ordenSolapas)) ST.ordenSolapas=[];
   if(!Array.isArray(ST.examenes)) ST.examenes=[];
   if(ST.horarios&&Array.isArray(ST.horarios.comisiones)&&ST.horarios.comisiones.length) COMISIONES=construirComisiones(ST.horarios.comisiones);
 } } }catch(e){} }
@@ -739,9 +751,11 @@ const electivasHs = () => MATERIAS.filter(m=>m.electiva&&aprobada(m.o)).reduce((
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let vista="materias";
-$$(".nav-int button").forEach(b=>b.onclick=()=>{ vista=b.dataset.vista;
-  $$(".nav-int button").forEach(x=>x.classList.toggle("activa",x===b));
-  ["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"].forEach(v=>$("#vista-"+v).hidden=v!==vista);
+$$(".nav-int button[data-vista]").forEach(b=>b.onclick=()=>{
+  if(huboArrastre) return;            // venía de reordenar, no es un clic
+  vista=b.dataset.vista;
+  $$(".nav-int button[data-vista]").forEach(x=>x.classList.toggle("activa",x===b));
+  VISTAS.forEach(v=>$("#vista-"+v).hidden=v!==vista);
   render(); });
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("ver"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("ver"),2600); }
 
@@ -2179,8 +2193,8 @@ function abrirModalExamen(id){
     guardar(); cerrarModal();
     // si el examen se cargó desde "Eventos próximos", no lo saco de esa pestaña
     if(vista!=="eventos") vista="agenda";
-    $$(".nav-int button").forEach(x=>x.classList.toggle("activa",x.dataset.vista===vista));
-    ["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"].forEach(v=>$("#vista-"+v).hidden=v!==vista);
+    $$(".nav-int button[data-vista]").forEach(x=>x.classList.toggle("activa",x.dataset.vista===vista));
+    VISTAS.forEach(v=>$("#vista-"+v).hidden=v!==vista);
     render();
     toast(e?"Examen actualizado":"Examen agregado a tu agenda");
   };
@@ -2293,7 +2307,12 @@ function sanearEstado(d){
              docentes:(Array.isArray(c.docentes)?c.docentes:[]).map(x=>limpiar(x,LARGO.docente)),
              bloques:c.bloques.map(b=>({...b, aula:limpiar(b.aula,LARGO.aula)}))}))}
         : null;
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes,
+  /* El orden puede venir de otro dispositivo o de un JSON ajeno: se descartan
+     los nombres desconocidos y los repetidos. Lo que falte se completa después. */
+  const ordenSolapas = Array.isArray(d.ordenSolapas)
+    ? [...new Set(d.ordenSolapas.filter(v => typeof v === "string" && VISTAS.includes(v)))]
+    : [];
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -2629,7 +2648,109 @@ function pintarPie(){
     : usuario ? "sincronizado con tu cuenta"
     : "sin sesión: los datos se guardan sólo en este dispositivo";
 }
+/* ================= ORDEN DE LAS SOLAPAS =================
+   El orden vive en ST, así que viaja con la cuenta: si alguien lo acomoda en la
+   computadora, lo encuentra igual en el celular. */
+const VISTAS = ["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"];
+
+/* Lo guardado primero, y atrás lo que falte. Así, cuando una versión nueva suma
+   una solapa, aparece al final en vez de desaparecer. */
+function ordenActual(){
+  const g = (ST.ordenSolapas || []).filter(v => VISTAS.includes(v));
+  const u = [...new Set(g)];
+  return [...u, ...VISTAS.filter(v => !u.includes(v))];
+}
+function aplicarOrdenSolapas(){
+  const nav = $(".nav-int"); if(!nav) return;
+  const orden = ordenActual();
+  const actual = [...nav.querySelectorAll("button[data-vista]")].map(b => b.dataset.vista);
+  if (actual.join() === orden.join()) return;      // ya está: mover nodos de gusto molesta al foco
+  const reset = $("#resetOrden");
+  for (const v of orden){
+    const b = nav.querySelector(`button[data-vista="${v}"]`);
+    if (b) nav.insertBefore(b, reset || null);
+  }
+}
+function guardarOrdenSolapas(){
+  const nav = $(".nav-int");
+  ST.ordenSolapas = [...nav.querySelectorAll("button[data-vista]")].map(b => b.dataset.vista);
+  guardar();
+  pintarResetOrden();
+}
+function pintarResetOrden(){
+  const b = $("#resetOrden"); if(!b) return;
+  b.hidden = ordenActual().join() === VISTAS.join();
+}
+
+/* Arrastre con Pointer Events: el mismo código sirve para mouse y para dedo.
+   En el celular la barra se desplaza de costado, así que arrancar a arrastrar
+   apenas se toca robaría el gesto de scroll: por eso el dedo necesita mantener
+   apretado, y el mouse sólo mover unos píxeles. */
+let huboArrastre = false;
+(function solapasArrastrables(){
+  const nav = $(".nav-int"); if(!nav) return;
+  const ESPERA_DEDO = 320, UMBRAL_MOUSE = 6;
+  let btn = null, activo = false, x0 = 0, reloj = null;
+
+  const soltar = () => {
+    if (reloj) { clearTimeout(reloj); reloj = null; }
+    if (activo){
+      btn.classList.remove("arrastrando");
+      nav.classList.remove("reordenando");
+      guardarOrdenSolapas();
+      huboArrastre = true;
+      setTimeout(() => { huboArrastre = false; }, 0);   // que no dispare el clic
+    }
+    btn = null; activo = false;
+  };
+  const empezar = () => {
+    if (!btn || activo) return;
+    activo = true;
+    btn.classList.add("arrastrando");
+    nav.classList.add("reordenando");
+    if (navigator.vibrate) navigator.vibrate(12);       // avisa que entró en modo mover
+  };
+
+  nav.addEventListener("pointerdown", ev => {
+    const b = ev.target.closest("button[data-vista]");
+    if (!b || ev.button) return;
+    btn = b; x0 = ev.clientX; activo = false;
+    b.setPointerCapture?.(ev.pointerId);
+    if (ev.pointerType !== "mouse") reloj = setTimeout(empezar, ESPERA_DEDO);
+  });
+
+  nav.addEventListener("pointermove", ev => {
+    if (!btn) return;
+    if (!activo){
+      if (ev.pointerType === "mouse" && Math.abs(ev.clientX - x0) > UMBRAL_MOUSE) empezar();
+      else if (ev.pointerType !== "mouse" && Math.abs(ev.clientX - x0) > 10){
+        clearTimeout(reloj); reloj = null; btn = null;   // se movió antes: quería desplazar
+      }
+      return;
+    }
+    // se busca sobre qué solapa está el dedo y se reacomoda el DOM en vivo
+    const bajo = document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.("button[data-vista]");
+    if (!bajo || bajo === btn) return;
+    const orden = [...nav.querySelectorAll("button[data-vista]")];
+    const antes = orden.indexOf(bajo) < orden.indexOf(btn);
+    nav.insertBefore(btn, antes ? bajo : bajo.nextSibling);
+  });
+
+  nav.addEventListener("pointerup", soltar);
+  nav.addEventListener("pointercancel", soltar);
+  // en el celular hay que frenar el desplazamiento lateral mientras se arrastra
+  nav.addEventListener("touchmove", ev => { if (activo) ev.preventDefault(); }, { passive:false });
+
+  const reset = $("#resetOrden");
+  if (reset) reset.onclick = () => {
+    ST.ordenSolapas = []; guardar(); aplicarOrdenSolapas(); pintarResetOrden();
+    toast("Orden original restablecido");
+  };
+})();
+
 function render(){
+  aplicarOrdenSolapas();
+  pintarResetOrden();
   pintarPie();
   renderPin();
   renderBanner();
@@ -2708,7 +2829,7 @@ function renderInstalar(){
       `</div>`);
 
   c.innerHTML = `<div class="inst-caja"><h3>Desde el menú del navegador</h3>
-    <p>Tu navegador todavía no ofreció la instalación. Suele aparecer después de usar la app un rato, pero podés forzarla a mano:</p>` +
+    <p>Tu navegador todavía no ofreció la instalación automática, pero podés hacerlo a mano:</p>` +
     pasos(["Abrí el menú del navegador, el de los tres puntos o las tres rayas.",
            "Buscá <b>Instalar aplicación</b> o <b>Agregar a pantalla principal</b>.",
            "Confirmá y listo."]) +
@@ -2745,7 +2866,7 @@ function avisarActualizacion(reg){
 /* Atajos del ícono de la pantalla de inicio: ?v=eventos abre esa pestaña directo. */
 (function(){
   const v=new URLSearchParams(location.search).get("v");
-  const valida=["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"];
+  const valida=VISTAS;
   if(!v || !valida.includes(v)) return;
   const b=document.querySelector(`.nav-int button[data-vista="${v}"]`);
   if(b) b.click();
