@@ -220,6 +220,20 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .ev-fila.pronto{border-left:4px solid var(--ambar)}
 .sec-tit{color:var(--petrol);font-size:15px;font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 .sec-tit small{color:var(--gris);font-weight:600;font-size:12px}
+/* ---------- filtros de comisión ---------- */
+.filtros-com{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;
+  padding:10px 12px;border-bottom:1px solid var(--linea);background:var(--suave)}
+.filtros-com .grupo{display:flex;flex-direction:column;gap:3px}
+.filtros-com label.tit{font-size:10.5px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.03em}
+.filtros-com select{border:1px solid var(--borde);background:var(--blanco);color:var(--texto);
+  border-radius:7px;padding:5px 8px;font-size:12.5px;font-weight:600}
+.filtros-com .chk{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--texto);padding-bottom:5px}
+.filtros-com .cuenta{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--muted);padding-bottom:5px}
+.filtros-com .limpiar{border:1px solid var(--borde);background:var(--blanco);color:var(--petrol);
+  border-radius:7px;padding:5px 9px;font-size:11.5px;font-weight:700}
+.filtros-com .limpiar:hover{border-color:var(--acento)}
+.com-op.oculta-filtro{display:none}
+.sin-coms{padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--gris)}
 /* ---------- pestaña Instalar ---------- */
 .inst-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
   padding:20px 22px;box-shadow:var(--sombra);max-width:620px}
@@ -479,6 +493,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <div>
         <div class="panel">
           <div class="cab"><h3>Materias que podés cursar</h3></div>
+          <div class="filtros-com" id="filtrosCom"></div>
           <div class="lista-cursables" id="listaCursables"></div>
         </div>
         <div class="panel" id="panelExternas" style="margin-top:14px" hidden>
@@ -572,7 +587,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.12 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.13 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -1062,6 +1077,7 @@ function materiasParaGrilla(){
   return MATERIAS.filter(m=>comsDe(m.o).length && (puedeCursar(m.o)||est(m.o)==="cursando"));
 }
 function renderGrillaLista(){
+  renderFiltrosCom();
   const cont=$("#listaCursables"); cont.innerHTML="";
   const ms=materiasParaGrilla();
   if(!ms.length){ cont.innerHTML=`<p style="padding:14px;color:var(--gris);font-weight:600">No hay materias cursables según tu estado actual. Marcá tus materias en la pestaña «Materias».</p>`; return; }
@@ -1070,12 +1086,12 @@ function renderGrillaLista(){
     const elegida=ST.grilla[m.o];
     el.innerHTML=`<div class="fila"><span class="punto" style="background:${colorMateria(m.o)}"></span>
       <span class="nom">${m.nombre}</span>${elegida?`<button class="btn-mini" data-quitar>quitar</button>`:""}</div>
-      <div class="coms">${comsDe(m.o).map(c=>`
+      <div class="coms">${comsVisibles(m.o).length ? comsVisibles(m.o).map(c=>`
         <label class="com-op ${elegida===claveCom(c)?"elegida":""}">
           <input type="radio" name="com-${m.o}" ${elegida===claveCom(c)?"checked":""} data-com="${claveCom(c)}" data-o="${m.o}">
           <span><b>${escHTML(c.curso)}</b>${c.manual?" <span class='chip chip-rendible'>otra regional</span>":""}${c.compartida?" <span class='chip chip-compartida'>plan 94</span>":""}${c.dictado==="1"?" <span class='chip chip-bloq'>1.ºC</span>":c.dictado==="2"?" <span class='chip chip-bloq'>2.ºC</span>":""}${c.modalidad==="virtual"?" <span class='chip chip-cursable'>virtual</span>":""}${chipsOrigen(c)}<br>
           <span class="det">${c.bloques.map(b=>`${DIAS[b.dia].slice(0,3)} ${hm(b.inicio)}–${hm(b.fin)}`).join(" · ")}</span></span>
-        </label>`).join("")}</div>`;
+        </label>`).join("") : `<div class="sin-coms">Ninguna comisión con los filtros puestos.</div>`}</div>`;
     el.querySelectorAll("input[type=radio]").forEach(r=>r.onchange=()=>{
       ST.grilla[+r.dataset.o]=r.dataset.com;
       if (est(+r.dataset.o)!=="cursando"){ ST.estados[+r.dataset.o]="cursando"; toast(`${m.nombre} marcada como «Cursando»`); }
@@ -1087,6 +1103,57 @@ function renderGrillaLista(){
   }
 }
 const claveCom = c => c.manual ? "M"+c.mid : c.curso+"|"+norm(c.materia);
+
+/* ================= FILTROS DE COMISIÓN =================
+   Las básicas se cursan con comisiones de todas las especialidades, así que una
+   materia de primer nivel puede tener más de treinta. Sin filtros, elegir se
+   vuelve incómodo y el optimizador tiene que revisar millones de combinaciones.
+   El filtro es uno solo y vale para las dos cosas: la lista y la búsqueda
+   automática. Se guarda en ST, así que viaja con la cuenta. */
+const FILTRO_BASE = { carrera:"todas", modalidad:"todas", recursantes:true };
+function filtroCom(){ return { ...FILTRO_BASE, ...(ST.filtroCom||{}) }; }
+const filtroActivo = () => JSON.stringify(filtroCom()) !== JSON.stringify(FILTRO_BASE);
+
+/* Los cursos de una sola letra (H, I, J…) son las comisiones abiertas a
+   cualquier carrera: no son "de otra especialidad" aunque el informe las liste
+   bajo una. Las de otra regional, cargadas a mano, tampoco se filtran nunca. */
+const comisionAbierta = c => !c.carrera || c.carrera === HOR.carrera || /^[A-Z]{1,2}(-R)?$/.test(c.curso||"");
+
+function comisionVisible(c){
+  if (c.manual) return true;
+  const f = filtroCom();
+  if (f.carrera === "propia" && !comisionAbierta(c)) return false;
+  if (f.modalidad !== "todas" && (c.modalidad||"presencial") !== f.modalidad) return false;
+  if (!f.recursantes && c.recursantes) return false;
+  return true;
+}
+/* La comisión ya elegida se muestra siempre: que desaparezca al mover un filtro
+   haría creer que se perdió. */
+const comsVisibles = o => comsDe(o).filter(c => comisionVisible(c) || ST.grilla[o] === claveCom(c));
+
+function renderFiltrosCom(){
+  const cont = $("#filtrosCom"); if(!cont) return;
+  const f = filtroCom();
+  const ms = materiasParaGrilla();
+  const tot = ms.reduce((t,m) => t + comsDe(m.o).length, 0);
+  const vis = ms.reduce((t,m) => t + comsVisibles(m.o).length, 0);
+  const sel = (id, val, ops) => `<select id="${id}">` + ops.map(([v,t]) =>
+    `<option value="${v}"${val===v?" selected":""}>${t}</option>`).join("") + `</select>`;
+  cont.innerHTML = `
+    <div class="grupo"><label class="tit">Especialidad</label>
+      ${sel("fcCarrera", f.carrera, [["todas","Todas"],["propia",HOR.carrera+" y abiertas"]])}</div>
+    <div class="grupo"><label class="tit">Modalidad</label>
+      ${sel("fcModalidad", f.modalidad, [["todas","Todas"],["presencial","Presencial"],["virtual","Virtual"]])}</div>
+    <label class="chk"><input type="checkbox" id="fcRec"${f.recursantes?" checked":""}> Incluir recursantes</label>
+    ${filtroActivo() ? `<button class="limpiar" id="fcLimpiar">Quitar filtros</button>` : ""}
+    <span class="cuenta">${vis} de ${tot} comisiones</span>`;
+  const guardarF = (k,v) => { ST.filtroCom = { ...filtroCom(), [k]:v }; guardar(); render(); };
+  $("#fcCarrera").onchange   = e => guardarF("carrera", e.target.value);
+  $("#fcModalidad").onchange = e => guardarF("modalidad", e.target.value);
+  $("#fcRec").onchange       = e => guardarF("recursantes", e.target.checked);
+  const lim = $("#fcLimpiar");
+  if (lim) lim.onclick = () => { ST.filtroCom = { ...FILTRO_BASE }; guardar(); render(); };
+}
 function comisionesElegidas(){
   const out=[], all=todasComs();
   for (const [o,k] of Object.entries(ST.grilla)){
@@ -1281,6 +1348,7 @@ function turnoDe(c){
   return ini < 13*60 ? "M" : ini >= 17*60 ? "N" : "T";
 }
 function comPasaFiltro(c,op){
+  if (!comisionVisible(c)) return false;      // el mismo filtro que ve el estudiante
   if (op.turnos.size && !op.turnos.has(turnoDe(c))) return false;
   if (op.diasLibres.size && c.bloques.some(b=>op.diasLibres.has(b.dia))) return false;
   return true;
@@ -1339,10 +1407,11 @@ $("#btnOptimizar").onclick=()=>{
     <button class="cerrar" onclick="cerrarModal()">✕</button>
     <h3>Armar horario automáticamente</h3>
     <div class="sub">La app prueba todas las combinaciones de comisiones y te propone las que no tienen superposiciones, priorizando cursar la mayor cantidad de materias.</div>
+    ${filtroActivo() ? `<div class="aviso" style="margin-bottom:10px">Se aplican tus filtros de comisión. Achicar la búsqueda la vuelve más precisa; quitalos si querés considerar todas.</div>` : ""}
     <section><b>Materias a considerar</b>
       <div style="max-height:170px;overflow:auto;border:1px solid var(--borde);border-radius:8px;padding:6px 10px">
         ${cursables.map(m=>`<label class="sim-op"><input type="checkbox" class="opMat" value="${m.o}" checked>
-          <span>${m.nombre} <small style="color:var(--gris)">· ${comsDe(m.o).length} comisión${comsDe(m.o).length>1?"es":""}</small></span></label>`).join("")}
+          <span>${m.nombre} <small style="color:var(--gris)">· ${comsVisibles(m.o).length} comisión${comsVisibles(m.o).length>1?"es":""}</small></span></label>`).join("")}
       </div></section>
     <section style="display:flex;gap:16px;flex-wrap:wrap">
       <div><b>Turnos</b><div style="display:flex;gap:10px">
@@ -2325,7 +2394,13 @@ function sanearEstado(d){
   const ordenSolapas = Array.isArray(d.ordenSolapas)
     ? [...new Set(d.ordenSolapas.filter(v => typeof v === "string" && VISTAS.includes(v)))]
     : [];
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas,
+  const fc = d.filtroCom || {};
+  const filtroCom = {
+    carrera:     ["todas","propia"].includes(fc.carrera) ? fc.carrera : "todas",
+    modalidad:   ["todas","presencial","virtual"].includes(fc.modalidad) ? fc.modalidad : "todas",
+    recursantes: fc.recursantes !== false,
+  };
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
