@@ -248,6 +248,17 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .filtros-com .limpiar:hover{border-color:var(--acento)}
 .com-op.oculta-filtro{display:none}
 .sin-coms{padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--gris)}
+/* ---------- práctica supervisada ---------- */
+.ps-panel{background:var(--blanco);border:1px solid var(--borde);border-left:5px solid var(--magenta);
+  border-radius:12px;padding:16px 18px;margin-top:26px;box-shadow:var(--sombra);max-width:760px}
+.ps-panel h3{color:var(--petrol);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ps-panel h3 .pill{font-size:10.5px}
+.ps-panel .desc{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 12px}
+.ps-panel .datos{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;
+  color:var(--muted);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--linea)}
+.ps-estados{display:flex;gap:6px;flex-wrap:wrap}
+.ps-estados .pill{cursor:pointer;border:1px solid transparent}
+.ps-estados .pill.activo{outline:2px solid var(--acento);outline-offset:1px}
 /* ---------- pestaña Instalar ---------- */
 .inst-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
   padding:20px 22px;box-shadow:var(--sombra);max-width:620px}
@@ -279,6 +290,16 @@ html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:
 .pin-it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 .pin-it .et{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;background:var(--suave);color:var(--muted)}
 html[data-tema="oscuro"] .pin-caja{background:#2b1319}
+/* el encabezado entero es el botón de plegar: en el celular una flecha sola
+   sería un blanco muy chico para el dedo */
+.pin-cab{width:100%;background:none;border:none;text-align:left;cursor:pointer;padding:0}
+.pin-cab:hover .fl{color:var(--rojo)}
+.pin-cab .fl{margin-left:auto;font-size:11px;color:var(--muted);transition:transform .18s;
+  display:inline-block;line-height:1}
+.pin-caja.plegada .pin-cab{margin-bottom:0}
+.pin-caja.plegada .fl{transform:rotate(-90deg)}
+.pin-caja.plegada .pin-it{display:none}
+.pin-cab .resumen{font-size:11.5px;font-weight:600;color:var(--muted);margin-left:8px}
 /* ---------- calendario: eventos institucionales ---------- */
 .cal-dia.enrango{background:var(--suave)}
 .cal-dia.enrango.hoy{background:var(--hover)}
@@ -493,6 +514,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <button class="btn primario" id="btnAutogestion">📋 Importar desde autogestión</button>
     </div>
     <div id="contMaterias"></div>
+    <div id="practicaSup"></div>
   </div>
 
   <div id="vista-grilla" hidden>
@@ -602,7 +624,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.14 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.15 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -845,6 +867,40 @@ function notaTarjetaHTML(o){
   const n=ST.notas[o];
   if(n==null) return "";
   return `<div class="nota-final">Nota final: <b>${n}</b></div>`;
+}
+
+/* ================= PRÁCTICA SUPERVISADA =================
+   No es una materia del plan: son las horas de práctica profesional. Por eso vive
+   fuera del CATALOGO y no entra en el porcentaje de avance ni en el simulador,
+   que cuentan materias. Sólo se registra en qué etapa está.
+   Los datos salen del informe de horarios de la Facultad (curso PS, 5.º nivel). */
+const PS = { nombre:"Práctica Supervisada", curso:"PS", nivel:5, hs:200,
+             dia:"Lunes", horario:"18:30 a 22:15", docente:"VILLARIO, Luis Antonio" };
+const PS_ESTADOS = {
+  pendiente: { txt:"Pendiente",  cls:"est-sin" },
+  curso:     { txt:"En curso",   cls:"est-cursando" },
+  hecha:     { txt:"Completada", cls:"est-aprobada" },
+};
+const estadoPS = () => PS_ESTADOS[ST.practicaSup] ? ST.practicaSup : "pendiente";
+
+function renderPracticaSup(){
+  const c=$("#practicaSup"); if(!c) return;
+  const e=estadoPS();
+  c.innerHTML=`<div class="ps-panel">
+    <h3>🏭 ${PS.nombre} <span class="pill ${PS_ESTADOS[e].cls}">${PS_ESTADOS[e].txt}</span></h3>
+    <p class="desc">Son las horas de práctica profesional en una empresa u organismo, no una materia
+      que se curse. Por eso va aparte y no entra en el porcentaje de avance de la carrera.</p>
+    <div class="datos">
+      <span>Comisión ${PS.curso}</span><span>${PS.nivel}.º nivel</span><span>Anual</span>
+      <span>${PS.hs} horas</span><span>${PS.dia} ${PS.horario}</span>
+    </div>
+    <div class="ps-estados">${Object.entries(PS_ESTADOS).map(([k,v])=>
+      `<span class="pill ${v.cls} ${k===e?"activo":""}" data-ps="${k}">${v.txt}</span>`).join("")}</div>
+  </div>`;
+  $$("#practicaSup [data-ps]").forEach(p=>p.onclick=()=>{
+    ST.practicaSup=p.dataset.ps; guardar(); renderPracticaSup();
+    toast("Práctica supervisada: "+PS_ESTADOS[p.dataset.ps].txt.toLowerCase());
+  });
 }
 
 function renderMaterias(){
@@ -2002,10 +2058,23 @@ function renderPin(){
     <span class="q">${escHTML(e.t)}</span>
     <span class="f">${rangoTexto(e)}</span>
     <span class="c">${cuandoTexto(e)}</span></div>`;
-  cont.innerHTML=`<div class="pin-caja">
-    <div class="pin-cab">📌 Inminente <span class="cont">${total}</span></div>
+  /* Plegado: se recuerda entre sesiones, pero si aparece algo nuevo e inminente
+     se vuelve a abrir solo. Si no, alguien que lo cierra hoy no se enteraría
+     nunca más de un parcial, que es justo lo que el pin tiene que evitar. */
+  const firma = [...propios.map(e=>"e"+e.id), ...acad.map(e=>e.d+e.t)].join("|");
+  if (ST.pinFirma !== firma){ ST.pinPlegado = false; ST.pinFirma = firma; guardar(); }
+  const plegado = !!ST.pinPlegado;
+  const resumen = plegado
+    ? `<span class="resumen">${escHTML(propios.length ? nombreMateriaEx(propios[0]) : acad[0].t)}${total>1?` y ${total-1} más`:""}</span>`
+    : "";
+  cont.innerHTML=`<div class="pin-caja${plegado?" plegada":""}">
+    <button class="pin-cab" id="pinPlegar" aria-expanded="${!plegado}"
+      title="${plegado?"Mostrar":"Ocultar"} los eventos inminentes">
+      📌 Inminente <span class="cont">${total}</span>${resumen}
+      <span class="fl">▼</span></button>
     ${propios.map(itemProp).join("")}${acad.map(itemAcad).join("")}
   </div>`;
+  $("#pinPlegar").onclick=()=>{ ST.pinPlegado=!ST.pinPlegado; guardar(); renderPin(); };
 }
 
 /* ================= AGENDA DE EXÁMENES =================
@@ -2504,7 +2573,10 @@ function sanearEstado(d){
     recursantes: fc.recursantes !== false,
   };
   const modoAgenda = ["fecha","mes","materia"].includes(d.modoAgenda) ? d.modoAgenda : "fecha";
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda,
+  const practicaSup = ["pendiente","curso","hecha"].includes(d.practicaSup) ? d.practicaSup : "pendiente";
+  const pinPlegado = d.pinPlegado === true;
+  const pinFirma = limpiar(d.pinFirma, 400);
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, practicaSup, pinPlegado, pinFirma,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -2947,7 +3019,7 @@ function render(){
   renderPin();
   renderBanner();
   actualizarBadge();
-  if (vista==="materias") renderMaterias();
+  if (vista==="materias"){ renderMaterias(); renderPracticaSup(); }
   if (vista==="grilla") renderGrilla();
   if (vista==="instalar") renderInstalar();
   if (vista==="eventos") renderEventos();
