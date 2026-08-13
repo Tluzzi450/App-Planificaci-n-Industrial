@@ -220,6 +220,20 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .ev-fila.pronto{border-left:4px solid var(--ambar)}
 .sec-tit{color:var(--petrol);font-size:15px;font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
 .sec-tit small{color:var(--gris);font-weight:600;font-size:12px}
+/* ---------- agenda: cómo se agrupan los eventos ---------- */
+.ag-modos{display:inline-flex;gap:2px;background:var(--suave);border:1px solid var(--borde);
+  border-radius:9px;padding:3px;margin-bottom:14px}
+.ag-modos button{border:none;background:none;color:var(--muted);font-weight:700;font-size:12.5px;
+  padding:6px 13px;border-radius:7px;transition:.15s}
+.ag-modos button:hover{color:var(--petrol)}
+.ag-modos button.activo{background:var(--blanco);color:var(--petrol);box-shadow:var(--sombra)}
+.ag-grupo{margin-bottom:18px}
+.ag-cab{display:flex;align-items:baseline;gap:9px;margin:0 0 9px;padding-bottom:6px;
+  border-bottom:2px solid var(--linea)}
+.ag-cab .t{font-size:14.5px;font-weight:800;color:var(--petrol);text-transform:capitalize}
+.ag-cab .n{font-size:11.5px;font-weight:700;color:var(--gris);margin-left:auto}
+.ag-cab .pt{width:9px;height:9px;border-radius:50%;flex:none}
+.ag-cab.pasado .t{color:var(--gris)}
 /* ---------- filtros de comisión ---------- */
 .filtros-com{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;
   padding:10px 12px;border-bottom:1px solid var(--linea);background:var(--suave)}
@@ -539,6 +553,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <div class="layout-agenda">
       <div class="panel" id="calendario"></div>
       <div>
+        <div class="ag-modos" id="agModos"></div>
         <div id="proximos10"></div>
         <div id="burbujas"></div>
       </div>
@@ -587,7 +602,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.13 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.14 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2183,7 +2198,95 @@ function renderCalendario(){
   });
 }
 
+/* ================= AGENDA: FORMAS DE ORDENAR =================
+   Por fecha es lo de siempre (lo urgente arriba). Por mes sirve para ver cómo
+   se reparte la carga del cuatrimestre. Por materia, para ver de una todo lo que
+   te queda de una asignatura, incluidos los exámenes que ya rendiste. */
+const MODOS_AGENDA = { fecha:"Por fecha", mes:"Por mes", materia:"Por materia" };
+const modoAgenda = () => MODOS_AGENDA[ST.modoAgenda] ? ST.modoAgenda : "fecha";
+
+function renderModosAgenda(){
+  const c=$("#agModos"); if(!c) return;
+  const m=modoAgenda();
+  c.innerHTML=Object.entries(MODOS_AGENDA).map(([k,t])=>
+    `<button data-modo="${k}" class="${k===m?"activo":""}">${t}</button>`).join("");
+  $$("#agModos button").forEach(b=>b.onclick=()=>{
+    ST.modoAgenda=b.dataset.modo; guardar(); render();
+  });
+}
+
+function grupoHTML(titulo, evs, extra=""){
+  return `<div class="ag-grupo">
+    <div class="ag-cab ${extra}">
+      <span class="t">${titulo}</span>
+      <span class="n">${evs.length} evento${evs.length>1?"s":""}</span>
+    </div>
+    <div class="burbujas">${evs.map(burbujaHTML).join("")}</div>
+  </div>`;
+}
+
+/* Agrupado por mes: los meses que vienen primero, y al final los que pasaron,
+   del más reciente al más viejo. Un mes sin nada no aparece. */
+function agendaPorMes(){
+  const evs=examenesOrdenados();
+  if(!evs.length) return "";
+  const g={};
+  for(const e of evs){
+    const k=e.fecha.slice(0,7);
+    (g[k]=g[k]||[]).push(e);
+  }
+  const hoyK=new Date().toISOString().slice(0,7);
+  const claves=Object.keys(g).sort();
+  const futuros=claves.filter(k=>k>=hoyK), pasados=claves.filter(k=>k<hoyK).reverse();
+  const titulo=k=>{
+    const d=new Date(k+"-01T00:00");
+    const t=d.toLocaleDateString("es-AR",{month:"long",year:"numeric"});
+    return k===hoyK ? t+" · este mes" : t;
+  };
+  return futuros.map(k=>grupoHTML(titulo(k), g[k])).join("")
+       + pasados.map(k=>grupoHTML(titulo(k), g[k], "pasado")).join("");
+}
+
+/* Agrupado por materia: primero las que tienen algo pendiente, ordenadas por lo
+   más próximo; después las que ya no tienen nada por delante. */
+function agendaPorMateria(){
+  const evs=examenesOrdenados();
+  if(!evs.length) return "";
+  const g={};
+  for(const e of evs){
+    const k=nombreMateriaEx(e);
+    (g[k]=g[k]||[]).push(e);
+  }
+  const conProx=[], sinProx=[];
+  for(const [k,lista] of Object.entries(g)){
+    const fut=lista.filter(e=>diasHasta(e.fecha)>=0);
+    // dentro de cada materia: primero lo que viene, después lo ya rendido
+    const ord=[...fut, ...lista.filter(e=>diasHasta(e.fecha)<0).reverse()];
+    (fut.length?conProx:sinProx).push({k, ord, prox:fut.length?diasHasta(fut[0].fecha):Infinity});
+  }
+  conProx.sort((a,b)=>a.prox-b.prox);
+  sinProx.sort((a,b)=>a.k.localeCompare(b.k,"es"));
+  return conProx.map(x=>grupoHTML(x.k, x.ord)).join("")
+       + sinProx.map(x=>grupoHTML(x.k, x.ord, "pasado")).join("");
+}
+
 function renderAgenda(){
+  renderModosAgenda();
+  const modo=modoAgenda();
+  renderCalendario();
+
+  if (modo!=="fecha"){
+    const html = modo==="mes" ? agendaPorMes() : agendaPorMateria();
+    $("#proximos10").innerHTML = html ||
+      `<div class="vacio">No tenés exámenes anotados. Agregá tu próximo parcial con el botón de arriba.</div>`;
+    // en estos modos todo va en un solo listado: los otros contenedores estorban
+    $("#burbujas").innerHTML = "";
+    $("#examenesPasados").innerHTML = "";
+    bindAccionesEx("#vista-agenda");
+    actualizarBadge();
+    return;
+  }
+
   const prox=futurosHasta(DIAS_PROXIMO);
   const idsProx=new Set(prox.map(e=>e.id));
   const resto=futurosHasta(null).filter(e=>!idsProx.has(e.id));
@@ -2400,7 +2503,8 @@ function sanearEstado(d){
     modalidad:   ["todas","presencial","virtual"].includes(fc.modalidad) ? fc.modalidad : "todas",
     recursantes: fc.recursantes !== false,
   };
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom,
+  const modoAgenda = ["fecha","mes","materia"].includes(d.modoAgenda) ? d.modoAgenda : "fecha";
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
