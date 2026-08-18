@@ -212,10 +212,13 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .cal-pt.pasada{background:var(--track)}
 .cal-pie{padding:0 12px 12px;font-size:12px;color:var(--muted);font-weight:600}
 .ev-fila{display:flex;align-items:baseline;gap:9px;padding:7px 10px;border:1px solid var(--borde);
-  border-radius:9px;background:var(--blanco);margin-bottom:6px}
-.ev-fila .d{font-weight:800;color:var(--petrol);font-size:12px;white-space:nowrap;min-width:62px}
-.ev-fila .m{font-weight:700;font-size:13px;color:var(--petrol);margin-right:auto}
-.ev-fila .t{font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap}
+  border-radius:9px;background:var(--blanco);margin-bottom:6px;flex-wrap:wrap}
+.ev-fila .d{font-weight:800;color:var(--petrol);font-size:12px;white-space:nowrap;min-width:62px;flex:none}
+/* min-width:0 deja que el nombre se corte en varias líneas en vez de empujar
+   la caja: sin esto, un título largo se desborda del borde redondeado. */
+.ev-fila .m{font-weight:700;font-size:13px;color:var(--petrol);margin-right:auto;
+  min-width:0;flex:1 1 120px;overflow-wrap:anywhere}
+.ev-fila .t{font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap;flex:none}
 .ev-fila.urgente{border-left:4px solid var(--rojo)}
 .ev-fila.pronto{border-left:4px solid var(--ambar)}
 .sec-tit{color:var(--petrol);font-size:15px;font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
@@ -290,7 +293,8 @@ html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:
 .pin-cab .cont{background:var(--rojo);color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:800}
 .pin-it{display:flex;align-items:baseline;gap:9px;padding:5px 0;border-top:1px solid var(--linea);flex-wrap:wrap}
 .pin-it:first-of-type{border-top:none}
-.pin-it .q{font-weight:700;font-size:13.5px;color:var(--petrol);margin-right:auto}
+.pin-it .q{font-weight:700;font-size:13.5px;color:var(--petrol);margin-right:auto;
+  min-width:0;flex:1 1 160px;overflow-wrap:anywhere}
 .pin-it .c{font-size:12px;font-weight:800;color:var(--rojo);white-space:nowrap}
 .pin-it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 .pin-it .et{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;background:var(--suave);color:var(--muted)}
@@ -587,9 +591,9 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
         <div class="ag-modos" id="agModos"></div>
         <div id="proximos10"></div>
         <div id="burbujas"></div>
+        <div id="examenesPasados"></div>
       </div>
     </div>
-    <div id="examenesPasados"></div>
   </div>
 
   <div id="vista-mapa" hidden>
@@ -633,7 +637,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.16 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.17 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2462,11 +2466,12 @@ function renderAgenda(){
     : `<div class="vacio">Nada en los próximos ${DIAS_PROXIMO} días.</div>`;
 
   $("#burbujas").innerHTML = resto.length
-    ? `<div class="sec-tit">Más adelante</div><div class="burbujas">${resto.map(burbujaHTML).join("")}</div>`
+    ? `<div class="sec-tit">Más adelante <small>${resto.length} evento${resto.length>1?"s":""}</small></div><div class="burbujas">${resto.map(burbujaHTML).join("")}</div>`
     : (prox.length ? "" : `<div class="vacio" style="margin-top:12px">No tenés exámenes anotados. Agregá tu próximo parcial con el botón de arriba.</div>`);
 
   $("#examenesPasados").innerHTML = pas.length
-    ? `<h3 style="margin:22px 0 10px">Ya pasaron</h3><div class="burbujas">${pas.map(burbujaHTML).join("")}</div>` : "";
+    ? `<div class="sec-tit">Ya pasaron <small>${pas.length} evento${pas.length>1?"s":""}</small></div>
+       <div class="burbujas">${pas.map(burbujaHTML).join("")}</div>` : "";
 
   bindAccionesEx("#vista-agenda");
   actualizarBadge();
