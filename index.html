@@ -267,6 +267,36 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .btn-mini.cal:hover{border-color:var(--acento);background:var(--suave)}
 .ag-export{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .ag-export .nota{font-size:11.5px;color:var(--gris);font-weight:600}
+/* ---------- calendario compartido ---------- */
+.gr-vacio{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
+  padding:24px 26px;box-shadow:var(--sombra);max-width:640px}
+.gr-vacio h3{color:var(--petrol);font-size:16px;margin:0 0 6px}
+.gr-vacio p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 16px}
+.gr-acc{display:flex;gap:10px;flex-wrap:wrap}
+.gr-cab{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--blanco);
+  border:1px solid var(--borde);border-radius:11px;padding:12px 16px;margin-bottom:16px;box-shadow:var(--sombra)}
+.gr-cab .nom{font-size:15.5px;font-weight:800;color:var(--petrol)}
+.gr-cab .cod{font-family:ui-monospace,monospace;font-size:13px;font-weight:800;letter-spacing:.08em;
+  background:var(--suave);color:var(--petrol);border-radius:7px;padding:4px 10px;cursor:pointer;border:1px solid var(--borde)}
+.gr-cab .cod:hover{border-color:var(--acento)}
+.gr-cab .der{margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.gr-sel{border:1px solid var(--borde);background:var(--blanco);color:var(--texto);border-radius:7px;
+  padding:5px 8px;font-size:12.5px;font-weight:700;font-family:inherit}
+.gr-miembros{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
+.gr-mi{font-size:11px;font-weight:700;background:var(--suave);color:var(--muted);
+  border-radius:99px;padding:2px 9px;border:1px solid var(--borde)}
+.gr-mi.yo{background:var(--marca);color:#fff;border-color:var(--marca)}
+.gr-ev{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;background:var(--blanco);
+  border:1px solid var(--borde);border-left:4px solid var(--cyan);border-radius:10px;
+  padding:10px 13px;margin-bottom:7px}
+.gr-ev.urgente{border-left-color:var(--rojo)}
+.gr-ev.pronto{border-left-color:var(--ambar)}
+.gr-ev.pasado{opacity:.6}
+.gr-ev .f{font-weight:800;color:var(--petrol);font-size:12.5px;white-space:nowrap;min-width:64px;flex:none}
+.gr-ev .t{font-weight:700;font-size:14px;color:var(--petrol);min-width:0;flex:1 1 160px;overflow-wrap:anywhere}
+.gr-ev .quien{font-size:11px;font-weight:600;color:var(--gris);white-space:nowrap}
+.gr-ev .acc{display:flex;gap:5px;flex-basis:100%;margin-top:2px}
+.gr-aviso{font-size:12px;color:var(--gris);font-weight:600;margin-bottom:12px}
 /* ---------- pestaña Instalar ---------- */
 .inst-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
   padding:20px 22px;box-shadow:var(--sombra);max-width:620px}
@@ -500,6 +530,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <button data-vista="materias" class="activa">Materias</button>
     <button data-vista="grilla">Armar horario</button>
     <button data-vista="eventos">Eventos próximos<span id="badgeEventos" class="badge" hidden></span></button>
+    <button data-vista="compartido">Calendario compartido</button>
     <button data-vista="instalar" id="tabInstalar">Instalar App</button>
     <button data-vista="agenda">Agenda<span id="badgeAgenda" class="badge" hidden></span></button>
     <button data-vista="mapa">Mapa de correlativas</button>
@@ -559,6 +590,12 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
         <div class="res-choques" id="resChoques"></div>
       </div>
     </div>
+  </div>
+
+  <div id="vista-compartido" hidden>
+    <h2>Calendario compartido</h2>
+    <p style="margin-bottom:16px;color:var(--muted);max-width:860px">Un calendario para tu grupo de cursada: hasta 10 personas, con las fechas que carga cualquiera de ustedes. Es un espacio aparte — lo que anotás en tu agenda personal no se ve acá, ni al revés.</p>
+    <div id="grCont"></div>
   </div>
 
   <div id="vista-instalar" hidden>
@@ -637,7 +674,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.17 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.19 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -829,6 +866,8 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let vista="materias";
 $$(".nav-int button[data-vista]").forEach(b=>b.onclick=()=>{
+  // al abrir el calendario compartido se busca lo último que cargó el grupo
+  if (b.dataset.vista==="compartido" && usuario && FB && !grCargando) setTimeout(grRefrescar,0);
   if(huboArrastre) return;            // venía de reordenar, no es un clic
   vista=b.dataset.vista;
   $$(".nav-int button[data-vista]").forEach(x=>x.classList.toggle("activa",x===b));
@@ -2675,7 +2714,8 @@ function sanearEstado(d){
   const practicaSup = ["pendiente","curso","hecha"].includes(d.practicaSup) ? d.practicaSup : "pendiente";
   const pinPlegado = d.pinPlegado === true;
   const pinFirma = limpiar(d.pinFirma, 400);
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, practicaSup, pinPlegado, pinFirma,
+  const grupoActivo = limpiar(d.grupoActivo, 60) || null;
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, practicaSup, pinPlegado, pinFirma, grupoActivo,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -2748,6 +2788,279 @@ async function cargarFirebase(){
   return FB;
 }
 const refUsuario = () => FB.F.doc(FB.db,"usuarios",usuario.uid);
+
+/* ================= CALENDARIO COMPARTIDO =================
+   Grupos de hasta 10 personas con un calendario en común. Vive en su propia
+   colección de Firestore, separada del progreso personal: estar en un grupo no
+   da ningún acceso a lo que el otro tiene cargado en su app. Lo único que se
+   comparte son los eventos que cada uno publica acá a propósito.
+
+   Se refresca al abrir la pestaña y con el botón, no en vivo: las fechas de
+   parciales cambian una vez por semana como mucho, y una escucha permanente
+   consumiría lecturas de Firestore todo el tiempo sin necesidad. */
+const GR_MAX = 10;
+const GR_TIPOS = { parcial:"Parcial", recuperatorio:"Recuperatorio", tp:"Entrega de TP",
+                   final:"Final", clase:"Clase o consulta", otro:"Otro" };
+let grupos = [], grEventos = [], grCargando = false, grError = "";
+
+const grActivo = () => grupos.find(g => g.id === ST.grupoActivo) || grupos[0] || null;
+const miNombre = () => (usuario && (usuario.displayName || (usuario.email||"").split("@")[0])) || "Alguien";
+
+/* Código de invitación: sin vocales ni caracteres que se confundan al dictarlo
+   por teléfono (0/O, 1/I). Se comparte por fuera de la app. */
+function codigoNuevo(){
+  const abc = "BCDFGHJKMNPQRSTVWXYZ23456789";
+  let c = "";
+  for (let i=0;i<4;i++) c += abc[Math.floor(Math.random()*abc.length)];
+  let d = "";
+  for (let i=0;i<4;i++) d += abc[Math.floor(Math.random()*abc.length)];
+  return c + "-" + d;
+}
+
+async function grCargarGrupos(){
+  if (!usuario || !FB) return;
+  const q = FB.F.query(FB.F.collection(FB.db,"grupos"),
+                       FB.F.where("miembros","array-contains",usuario.uid));
+  const snap = await FB.F.getDocs(q);
+  grupos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+  if (!grupos.some(g => g.id === ST.grupoActivo)) ST.grupoActivo = grupos[0] ? grupos[0].id : null;
+}
+
+async function grCargarEventos(){
+  const g = grActivo();
+  if (!g || !FB){ grEventos = []; return; }
+  const snap = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"eventos"));
+  grEventos = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+    .sort((a,b) => (a.fecha+(a.hora||"")).localeCompare(b.fecha+(b.hora||"")));
+}
+
+async function grRefrescar(){
+  if (grCargando) return;
+  grCargando = true; grError = ""; renderCompartido();
+  try { await grCargarGrupos(); await grCargarEventos(); }
+  catch(e){ grError = explicar(e); }
+  grCargando = false; guardar(); renderCompartido();
+}
+
+async function grCrear(){
+  const nombre = (prompt("¿Cómo se llama el grupo?", "Comisión 3I5") || "").trim();
+  if (!nombre) return;
+  try {
+    const cod = codigoNuevo();
+    const ref = await FB.F.addDoc(FB.F.collection(FB.db,"grupos"), {
+      nombre: nombre.slice(0,60), codigo: cod, creador: usuario.uid,
+      miembros: [usuario.uid], nombres: { [usuario.uid]: miNombre() },
+      creado: new Date().toISOString(), actualizado: new Date().toISOString(),
+    });
+    /* El código se guarda aparte, como identificador de un documento mínimo que
+       sólo dice a qué grupo apunta. Así, para entrar alcanza con pedir ESE
+       documento por su id, y nadie necesita permiso para recorrer los grupos:
+       sin el código, un grupo ajeno es invisible. */
+    await FB.F.setDoc(FB.F.doc(FB.db,"invitaciones",cod), { grupo: ref.id });
+    ST.grupoActivo = ref.id; guardar();
+    await grRefrescar();
+    toast("Grupo creado. Compartí el código " + cod);
+  } catch(e){ toast("No se pudo crear: " + explicar(e)); }
+}
+
+async function grUnirse(){
+  const cod = (prompt("Pegá el código que te pasaron (por ejemplo BKTM-4RQ7)") || "")
+    .trim().toUpperCase();
+  if (!cod) return;
+  try {
+    // se pide UN documento por su identificador: no hace falta poder listar grupos
+    const inv = await FB.F.getDoc(FB.F.doc(FB.db,"invitaciones",cod));
+    if (!inv.exists()) return toast("No encontré ningún grupo con ese código");
+    const gid = inv.data().grupo;
+    const dg = await FB.F.getDoc(FB.F.doc(FB.db,"grupos",gid));
+    if (!dg.exists()) return toast("Ese grupo ya no existe");
+    const g = dg.data();
+    if ((g.miembros||[]).includes(usuario.uid)){
+      ST.grupoActivo = gid; guardar(); await grRefrescar();
+      return toast("Ya estabas en ese grupo");
+    }
+    if ((g.miembros||[]).length >= GR_MAX) return toast(`El grupo ya tiene ${GR_MAX} integrantes`);
+    await FB.F.updateDoc(FB.F.doc(FB.db,"grupos",gid), {
+      miembros: [...g.miembros, usuario.uid],
+      nombres: { ...(g.nombres||{}), [usuario.uid]: miNombre() },
+      actualizado: new Date().toISOString(),
+    });
+    ST.grupoActivo = gid; guardar();
+    await grRefrescar();
+    toast("Te sumaste a " + g.nombre);
+  } catch(e){ toast("No se pudo entrar: " + explicar(e)); }
+}
+
+async function grSalir(){
+  const g = grActivo(); if (!g) return;
+  const ultimo = g.miembros.length === 1;
+  const msg = g.creador === usuario.uid && !ultimo
+    ? `Creaste "${g.nombre}". Si salís, el grupo queda sin dueño y nadie podrá borrar eventos ajenos. ¿Salir igual?`
+    : ultimo ? `Sos la única persona en "${g.nombre}". Si salís, el grupo y sus eventos se borran. ¿Confirmás?`
+             : `¿Salir de "${g.nombre}"?`;
+  if (!confirm(msg)) return;
+  try {
+    if (ultimo){
+      await FB.F.deleteDoc(FB.F.doc(FB.db,"grupos",g.id));
+      // el código queda libre; si falla no importa, el grupo ya no existe
+      try { await FB.F.deleteDoc(FB.F.doc(FB.db,"invitaciones",g.codigo)); } catch(e){}
+    }
+    else {
+      const nom = { ...(g.nombres||{}) }; delete nom[usuario.uid];
+      await FB.F.updateDoc(FB.F.doc(FB.db,"grupos",g.id), {
+        miembros: g.miembros.filter(u => u !== usuario.uid), nombres: nom,
+        actualizado: new Date().toISOString(),
+      });
+    }
+    ST.grupoActivo = null; guardar();
+    await grRefrescar();
+    toast(ultimo ? "Grupo eliminado" : "Saliste del grupo");
+  } catch(e){ toast("No se pudo salir: " + explicar(e)); }
+}
+
+function grModalEvento(ev){
+  const g = grActivo(); if (!g) return;
+  const e = ev || { titulo:"", fecha:"", hora:"", tipo:"parcial", detalle:"" };
+  // se arma igual que los demás modales de la app, para que se vea consistente
+  $("#modal").innerHTML=`
+    <button class="cerrar" onclick="cerrarModal()">✕</button>
+    <h3>${ev?"Editar":"Nuevo"} evento del grupo</h3>
+    <div class="sub">Lo van a ver las ${g.miembros.length} personas de "${escHTML(g.nombre)}".</div>
+    <section><b>Título</b>
+      <input id="geTitulo" class="inp-form" maxlength="120" placeholder="Parcial de Análisis II" value="${escHTML(e.titulo)}"></section>
+    <section style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1 1 150px"><b>Fecha</b>
+        <input id="geFecha" class="inp-form" type="date" value="${escHTML(e.fecha)}"></div>
+      <div style="flex:1 1 110px"><b>Hora (opcional)</b>
+        <input id="geHora" class="inp-form" type="time" value="${escHTML(e.hora||"")}"></div>
+    </section>
+    <section><b>Tipo</b>
+      <select id="geTipo" class="inp-form">${Object.entries(GR_TIPOS).map(([k,v])=>
+        `<option value="${k}"${e.tipo===k?" selected":""}>${v}</option>`).join("")}</select></section>
+    <section><b>Detalle (opcional)</b>
+      <textarea id="geDetalle" class="inp-form" rows="2" maxlength="500">${escHTML(e.detalle||"")}</textarea></section>
+    <div class="modal-acc">
+      <button class="btn" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn primario" id="geGuardar">Guardar</button>
+    </div>`;
+  $("#velo").classList.add("abierto");
+  $("#geGuardar").onclick = async () => {
+    const titulo = $("#geTitulo").value.trim(), fecha = $("#geFecha").value;
+    if (!titulo) return toast("Poné un título");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return toast("Elegí una fecha");
+    const datos = { titulo: titulo.slice(0,120), fecha, hora: $("#geHora").value || "",
+      tipo: $("#geTipo").value, detalle: $("#geDetalle").value.trim().slice(0,500),
+      autor: ev ? ev.autor : usuario.uid, autorNombre: ev ? ev.autorNombre : miNombre(),
+      creado: ev ? ev.creado : new Date().toISOString(), actualizado: new Date().toISOString() };
+    try {
+      if (ev) await FB.F.setDoc(FB.F.doc(FB.db,"grupos",g.id,"eventos",ev.id), datos);
+      else    await FB.F.addDoc(FB.F.collection(FB.db,"grupos",g.id,"eventos"), datos);
+      cerrarModal(); await grRefrescar(); toast(ev?"Evento actualizado":"Evento agregado");
+    } catch(err){ toast("No se pudo guardar: " + explicar(err)); }
+  };
+}
+
+async function grBorrarEvento(ev){
+  const g = grActivo(); if (!g) return;
+  if (!confirm(`¿Eliminar "${ev.titulo}" del calendario del grupo?`)) return;
+  try { await FB.F.deleteDoc(FB.F.doc(FB.db,"grupos",g.id,"eventos",ev.id));
+        await grRefrescar(); toast("Evento eliminado");
+  } catch(e){ toast("No se pudo eliminar: " + explicar(e)); }
+}
+
+function grEventoHTML(e, g){
+  const d = diasHasta(e.fecha), c = textoCuenta(d);
+  const cls = d<0 ? "pasado" : d<=2 ? "urgente" : d<=7 ? "pronto" : "";
+  const puedo = e.autor === usuario.uid || g.creador === usuario.uid;
+  return `<div class="gr-ev ${cls}">
+    <span class="f">${fmtFecha(e.fecha)}${e.hora?" · "+e.hora:""}</span>
+    <span class="t">${escHTML(e.titulo)}</span>
+    <span class="chip ${d<0?"chip-bloq":"chip-rendible"}">${GR_TIPOS[e.tipo]||"Otro"}</span>
+    <span class="quien">${d>=0?c.n+" "+c.s+" · ":""}lo cargó ${escHTML(e.autorNombre||"alguien")}</span>
+    ${e.detalle?`<div style="flex-basis:100%;font-size:12.5px;color:var(--muted)">${escHTML(e.detalle)}</div>`:""}
+    ${puedo?`<div class="acc">
+      <button class="btn-mini" data-gr-edit="${e.id}">editar</button>
+      <button class="btn-mini" data-gr-del="${e.id}">eliminar</button></div>`:""}
+  </div>`;
+}
+
+function renderCompartido(){
+  const c = $("#grCont"); if (!c) return;
+
+  if (!syncConfigurado())
+    return void (c.innerHTML = `<div class="gr-vacio"><h3>No disponible</h3>
+      <p>Esta versión del planificador no tiene la sincronización configurada, así que no puede haber calendarios compartidos.</p></div>`);
+  if (!usuario)
+    return void (c.innerHTML = `<div class="gr-vacio"><h3>Necesitás iniciar sesión</h3>
+      <p>El calendario compartido usa tu cuenta para saber de qué grupos formás parte.</p>
+      <div class="gr-acc"><button class="btn primario" id="grLogin">Iniciar sesión</button></div></div>`,
+      $("#grLogin").onclick = abrirModalSync);
+
+  if (grCargando && !grupos.length)
+    return void (c.innerHTML = `<div class="gr-vacio"><p>Cargando…</p></div>`);
+
+  const g = grActivo();
+  if (!g)
+    return void (c.innerHTML = `<div class="gr-vacio">
+      <h3>Todavía no estás en ningún grupo</h3>
+      <p>Creá uno y compartí el código con tus compañeros, o entrá a uno con el código que te pasaron.
+         Son hasta ${GR_MAX} personas y sólo se comparten los eventos que carguen acá.</p>
+      ${grError?`<div class="aviso">${escHTML(grError)}</div>`:""}
+      <div class="gr-acc">
+        <button class="btn primario" id="grCrear">Crear un grupo</button>
+        <button class="btn" id="grUnirse">Entrar con un código</button>
+      </div></div>`,
+      $("#grCrear").onclick = grCrear, $("#grUnirse").onclick = grUnirse);
+
+  const fut = grEventos.filter(e => diasHasta(e.fecha) >= 0);
+  const pas = grEventos.filter(e => diasHasta(e.fecha) < 0).reverse();
+  const nombres = (g.miembros||[]).map(u =>
+    `<span class="gr-mi ${u===usuario.uid?"yo":""}">${escHTML(u===usuario.uid?"vos":((g.nombres||{})[u]||"alguien"))}</span>`).join("");
+
+  c.innerHTML = `
+    <div class="gr-cab">
+      <div>
+        <div class="nom">${escHTML(g.nombre)}</div>
+        <div class="gr-miembros">${nombres}</div>
+      </div>
+      <div class="der">
+        ${grupos.length>1?`<select class="gr-sel" id="grSel">${grupos.map(x=>
+          `<option value="${x.id}"${x.id===g.id?" selected":""}>${escHTML(x.nombre)}</option>`).join("")}</select>`:""}
+        <button class="cod" id="grCod" title="Tocá para copiar el código de invitación">${escHTML(g.codigo)}</button>
+        <button class="btn" id="grRefresh">${grCargando?"…":"↻"}</button>
+        <button class="btn" id="grSalir">Salir</button>
+      </div>
+    </div>
+    <div class="ag-export">
+      <button class="btn primario" id="grNuevo">➕ Agregar evento al grupo</button>
+      <button class="btn" id="grCrear2">Crear otro grupo</button>
+      <button class="btn" id="grUnirse2">Entrar con un código</button>
+    </div>
+    ${grError?`<div class="aviso">${escHTML(grError)}</div>`:""}
+    <div class="gr-aviso">${g.miembros.length} de ${GR_MAX} integrantes · se actualiza al abrir la pestaña o con ↻</div>
+    ${fut.length?`<div class="sec-tit">Lo que viene <small>${fut.length} evento${fut.length>1?"s":""}</small></div>
+      ${fut.map(e=>grEventoHTML(e,g)).join("")}`
+     :`<div class="vacio">Todavía no hay eventos cargados en este grupo.</div>`}
+    ${pas.length?`<div class="sec-tit">Ya pasaron <small>${pas.length} evento${pas.length>1?"s":""}</small></div>
+      ${pas.map(e=>grEventoHTML(e,g)).join("")}`:""}`;
+
+  $("#grNuevo").onclick   = () => grModalEvento(null);
+  $("#grCrear2").onclick  = grCrear;
+  $("#grUnirse2").onclick = grUnirse;
+  $("#grSalir").onclick   = grSalir;
+  $("#grRefresh").onclick = grRefrescar;
+  $("#grCod").onclick = () => {
+    navigator.clipboard?.writeText(g.codigo).then(
+      () => toast("Código copiado: " + g.codigo),
+      () => toast("El código es " + g.codigo));
+  };
+  const sel = $("#grSel");
+  if (sel) sel.onchange = async () => { ST.grupoActivo = sel.value; guardar(); await grRefrescar(); };
+  $$("#grCont [data-gr-edit]").forEach(b => b.onclick = () =>
+    grModalEvento(grEventos.find(x => x.id === b.dataset.grEdit)));
+  $$("#grCont [data-gr-del]").forEach(b => b.onclick = () =>
+    grBorrarEvento(grEventos.find(x => x.id === b.dataset.grDel)));
+}
 const dispositivo = () => {
   const u=navigator.userAgent;
   return /Android/i.test(u)?"Android":/iPhone|iPad/i.test(u)?"iPhone/iPad"
@@ -3014,7 +3327,7 @@ function pintarPie(){
 /* ================= ORDEN DE LAS SOLAPAS =================
    El orden vive en ST, así que viaja con la cuenta: si alguien lo acomoda en la
    computadora, lo encuentra igual en el celular. */
-const VISTAS = ["materias","grilla","instalar","eventos","agenda","mapa","simulador","avance"];
+const VISTAS = ["materias","grilla","instalar","compartido","eventos","agenda","mapa","simulador","avance"];
 
 /* Lo guardado primero, y atrás lo que falte. Así, cuando una versión nueva suma
    una solapa, aparece al final en vez de desaparecer. */
@@ -3120,6 +3433,7 @@ function render(){
   actualizarBadge();
   if (vista==="materias"){ renderMaterias(); renderPracticaSup(); }
   if (vista==="grilla") renderGrilla();
+  if (vista==="compartido") renderCompartido();
   if (vista==="instalar") renderInstalar();
   if (vista==="eventos") renderEventos();
   if (vista==="agenda") renderAgenda();
