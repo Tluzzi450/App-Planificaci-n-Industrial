@@ -259,6 +259,11 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .ps-estados{display:flex;gap:6px;flex-wrap:wrap}
 .ps-estados .pill{cursor:pointer;border:1px solid transparent}
 .ps-estados .pill.activo{outline:2px solid var(--acento);outline-offset:1px}
+/* ---------- exportar a calendario ---------- */
+.btn-mini.cal{color:var(--petrol);font-weight:700}
+.btn-mini.cal:hover{border-color:var(--acento);background:var(--suave)}
+.ag-export{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.ag-export .nota{font-size:11.5px;color:var(--gris);font-weight:600}
 /* ---------- pestaña Instalar ---------- */
 .inst-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
   padding:20px 22px;box-shadow:var(--sombra);max-width:620px}
@@ -575,6 +580,10 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <div class="layout-agenda">
       <div class="panel" id="calendario"></div>
       <div>
+        <div class="ag-export">
+          <button class="btn" id="btnIcsExamenes">📅 Exportar todo al calendario</button>
+          <span class="nota">con avisos 5, 2 y 1 día antes</span>
+        </div>
         <div class="ag-modos" id="agModos"></div>
         <div id="proximos10"></div>
         <div id="burbujas"></div>
@@ -624,7 +633,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.15 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.16 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2094,6 +2103,88 @@ function textoCuenta(d){
   if(d===-1)return {n:"ayer", s:""};
   return {n:String(-d), s:"días atrás"};
 }
+/* ================= MANDAR AL CALENDARIO =================
+   Se usa el enlace de Google Calendar, que abre el formulario con todo cargado
+   y el estudiante sólo confirma. No hace falta pedirle permiso para escribir en
+   su calendario: ese permiso Google lo considera sensible y exige verificar la
+   app, con dominio propio y varias semanas de trámite.
+
+   Los exámenes se anotan por día, sin hora obligatoria. Si no hay hora, se manda
+   como evento de día completo, que es lo correcto: inventar las 9 de la mañana
+   sería peor que no poner nada. */
+const pad2 = n => String(n).padStart(2,"0");
+
+function fechaGCal(e){
+  const [a,m,d] = e.fecha.split("-").map(Number);
+  if (!e.hora) {                                   // día completo: fin = día siguiente
+    const f = new Date(a, m-1, d), g = new Date(a, m-1, d+1);
+    const s = x => `${x.getFullYear()}${pad2(x.getMonth()+1)}${pad2(x.getDate())}`;
+    return s(f) + "/" + s(g);
+  }
+  const [hh,mm] = e.hora.split(":").map(Number);
+  const ini = new Date(a, m-1, d, hh, mm);
+  const fin = new Date(ini.getTime() + 2*60*60*1000);   // 2 h, lo típico de un parcial
+  // en formato local, sin Z: así respeta el huso del estudiante
+  const s = x => `${x.getFullYear()}${pad2(x.getMonth()+1)}${pad2(x.getDate())}T${pad2(x.getHours())}${pad2(x.getMinutes())}00`;
+  return s(ini) + "/" + s(fin);
+}
+
+function urlGoogleCalendar(e){
+  const mat = nombreMateriaEx(e);
+  const p = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `${TIPOS_EX[e.tipo]||"Examen"} · ${mat}`,
+    dates: fechaGCal(e),
+    details: [e.detalle, e.notas, "Agendado desde el Planificador de Ingeniería Industrial — UTN Haedo"]
+      .filter(Boolean).join("\n\n"),
+  });
+  return "https://calendar.google.com/calendar/render?" + p.toString();
+}
+
+/* Archivo .ics con todos los exámenes que faltan. A diferencia del enlace, éste
+   sí puede llevar avisos, y sirve para cualquier calendario, no sólo Google. */
+function icsExamenes(evs){
+  const esc = s => String(s||"").replace(/[\\;,]/g, m => "\\"+m).replace(/\r?\n/g, "\\n");
+  let ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PlanificadorUTN//ES\r\nCALSCALE:GREGORIAN\r\n";
+  for (const e of evs){
+    const [a,m,d] = e.fecha.split("-").map(Number);
+    const fd = `${a}${pad2(m)}${pad2(d)}`;
+    let cuando;
+    if (e.hora){
+      const [hh,mm] = e.hora.split(":").map(Number);
+      const ini = new Date(a,m-1,d,hh,mm), fin = new Date(ini.getTime()+2*60*60*1000);
+      const s = x => `${x.getFullYear()}${pad2(x.getMonth()+1)}${pad2(x.getDate())}T${pad2(x.getHours())}${pad2(x.getMinutes())}00`;
+      cuando = `DTSTART:${s(ini)}\r\nDTEND:${s(fin)}\r\n`;
+    } else {
+      const g = new Date(a,m-1,d+1);
+      cuando = `DTSTART;VALUE=DATE:${fd}\r\nDTEND;VALUE=DATE:${g.getFullYear()}${pad2(g.getMonth()+1)}${pad2(g.getDate())}\r\n`;
+    }
+    /* Tres avisos: cinco días antes para empezar a estudiar, dos para apurar, y
+       el día anterior. El UID hace que reimportar actualice en vez de duplicar. */
+    const avisos = [["-P5D","Faltan 5 días"],["-P2D","Faltan 2 días"],["-P1D","Es mañana"]]
+      .map(([t,txt]) => `BEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:${t}\r\nDESCRIPTION:${esc(txt)}: ${esc(TIPOS_EX[e.tipo]||"Examen")} de ${esc(nombreMateriaEx(e))}\r\nEND:VALARM\r\n`).join("");
+    ics += "BEGIN:VEVENT\r\n"
+      + `UID:examen-${e.id}@planificador-utn\r\n`
+      + cuando
+      + `SUMMARY:${esc((TIPOS_EX[e.tipo]||"Examen")+" · "+nombreMateriaEx(e))}\r\n`
+      + (e.detalle||e.notas ? `DESCRIPTION:${esc([e.detalle,e.notas].filter(Boolean).join(" — "))}\r\n` : "")
+      + "LOCATION:UTN Haedo\r\n"
+      + avisos
+      + "END:VEVENT\r\n";
+  }
+  return ics + "END:VCALENDAR\r\n";
+}
+
+function exportarExamenesIcs(){
+  const evs = futurosHasta(null);
+  if (!evs.length) return toast("No tenés exámenes por delante para exportar");
+  const a = document.createElement("a");
+  a.download = "examenes-utn.ics";
+  a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(icsExamenes(evs));
+  a.click();
+  toast(`${evs.length} examen${evs.length>1?"es":""} con avisos a 5, 2 y 1 día`);
+}
+
 function burbujaHTML(e){
   const d=diasHasta(e.fecha), c=textoCuenta(d);
   const cls = d<0 ? "pasada" : d<=2 ? "urgente" : d<=7 ? "pronto" : "";
@@ -2110,6 +2201,8 @@ function burbujaHTML(e){
     <div class="meta">📅 ${fmtFecha(e.fecha)}${e.hora?` · ${e.hora} hs`:""}</div>
     ${e.notas?`<div class="nota-b">${escHTML(e.notas)}</div>`:""}
     <div class="acc">
+      ${d>=0?`<a class="btn-mini cal" href="${urlGoogleCalendar(e)}" target="_blank" rel="noopener"
+        title="Abre Google Calendar con los datos cargados">📅 Google Calendar</a>`:""}
       <button class="btn-mini" data-edit-ex="${e.id}">editar</button>
       ${d<0?`<button class="btn-mini" data-nota-ex="${e.id}">${e.nota!=null?"cambiar nota":"poner nota"}</button>`:""}
       <button class="btn-mini" data-del-ex="${e.id}">eliminar</button>
@@ -2455,6 +2548,7 @@ function abrirModalExamen(id){
   $("#velo").classList.add("abierto");
 }
 $("#btnExamen").onclick=()=>abrirModalExamen();
+$("#btnIcsExamenes").onclick=exportarExamenesIcs;
 $("#btnExamenEv").onclick=()=>abrirModalExamen();
 
 /* ================= MAPA DE CORRELATIVAS ================= */
