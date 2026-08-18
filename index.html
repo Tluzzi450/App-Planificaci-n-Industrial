@@ -255,12 +255,11 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .ps-panel{background:var(--blanco);border:1px solid var(--borde);border-left:5px solid var(--magenta);
   border-radius:12px;padding:16px 18px;margin-top:26px;box-shadow:var(--sombra);max-width:760px}
 .ps-panel h3{color:var(--petrol);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.ps-panel h3 .pill{font-size:10.5px}
 .ps-panel .desc{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 12px}
 .ps-panel .datos{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;
   color:var(--muted);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--linea)}
 .ps-estados{display:flex;gap:6px;flex-wrap:wrap}
-.ps-estados .pill{cursor:pointer;border:1px solid transparent}
+.ps-estados .pill{cursor:pointer}
 .ps-estados .pill.activo{outline:2px solid var(--acento);outline-offset:1px}
 /* ---------- exportar a calendario ---------- */
 .btn-mini.cal{color:var(--petrol);font-weight:700}
@@ -308,7 +307,6 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .gr-b{min-width:18px;height:18px;border-radius:99px;font-size:10.5px;font-weight:800;
   display:inline-flex;align-items:center;justify-content:center;padding:0 5px;line-height:1}
 .gr-b.ev{background:var(--ambar);color:#4a3000}
-.gr-b.ms{background:var(--cyan);color:#04323c}
 /* ---------- avatar del grupo ---------- */
 .gr-av{width:42px;height:42px;border-radius:12px;flex:none;display:inline-flex;align-items:center;
   justify-content:center;font-weight:800;font-size:17px;color:#fff;border:none;cursor:pointer;line-height:1}
@@ -350,17 +348,6 @@ html[data-tema="oscuro"] .gr-alerta{background:#10323f}
 .gr-vercom{border:1px solid var(--borde);background:var(--blanco);color:var(--petrol);
   border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700}
 .gr-vercom:hover{border-color:var(--acento)}
-/* ---------- chat lateral ---------- */
-.layout-gr{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
-@media(max-width:980px){.layout-gr{grid-template-columns:1fr}}
-.gr-chat{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
-  box-shadow:var(--sombra);display:flex;flex-direction:column;max-height:74vh}
-.gr-chat .cab{padding:11px 14px;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:8px}
-.gr-chat .cab b{color:var(--petrol);font-size:14px;margin-right:auto}
-.gr-chat .cuerpo{padding:10px 14px;overflow:auto;flex:1;min-height:170px}
-.gr-chat .pie{padding:10px 12px;border-top:1px solid var(--borde)}
-.gr-burbuja{background:var(--rojo);color:#fff;border-radius:99px;font-size:11px;
-  padding:1px 7px;font-weight:800}
 /* ---------- selector de materia ---------- */
 .gr-busca{position:relative}
 .gr-lista{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--blanco);
@@ -600,13 +587,13 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <button class="btn" id="btnImportar" title="Carga un estado exportado previamente">⬆ Importar</button>
       <input type="file" id="inpImportar" accept=".json" hidden>
       <button class="btn peligro" id="btnReiniciar">Reiniciar</button>
+      <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄</button>
     </div>
   </div>
   <div class="franja"><i></i><i></i><i></i><i></i><i></i></div>
   <nav><div class="nav-int">
     <button data-vista="materias" class="activa">Materias</button>
     <button data-vista="grilla">Armar horario</button>
-    <button data-vista="eventos">Eventos próximos<span id="badgeEventos" class="badge" hidden></span></button>
     <button data-vista="compartido">Calendario compartido</button>
     <button data-vista="instalar" id="tabInstalar">Instalar App</button>
     <button data-vista="agenda">Agenda<span id="badgeAgenda" class="badge" hidden></span></button>
@@ -681,15 +668,6 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <div id="instCont"></div>
   </div>
 
-  <div id="vista-eventos" hidden>
-    <h2>Eventos próximos</h2>
-    <p style="margin-bottom:12px;color:var(--muted);max-width:860px">Lo que se te viene encima en los próximos <b>5 días</b>. El número de la pestaña cuenta exactamente esto.</p>
-    <div style="margin-bottom:14px"><button class="btn primario" id="btnExamenEv">➕ Agregar examen</button></div>
-    <div id="evUrgentes"></div>
-    <div id="evAcad"></div>
-    <div id="evResto"></div>
-  </div>
-
   <div id="vista-agenda" hidden>
     <h2>Agenda de exámenes</h2>
     <p style="margin-bottom:12px;color:var(--muted);max-width:860px">Anotá tus parciales, recuperatorios y entregas. Cada uno te muestra cuántos días faltan
@@ -751,7 +729,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.20 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.21 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2374,27 +2352,6 @@ function bindAccionesEx(raiz){
   });
 }
 
-/* ---------------- vista: eventos próximos ---------------- */
-function renderEventos(){
-  const urg=futurosHasta(DIAS_URGENTE);
-  const resto=futurosHasta(null).filter(e=>diasHasta(e.fecha)>DIAS_URGENTE);
-  $("#evUrgentes").innerHTML = urg.length
-    ? `<div class="burbujas">${urg.map(burbujaHTML).join("")}</div>`
-    : `<div class="vacio">Nada en los próximos ${DIAS_URGENTE} días. Respirá.</div>`;
-  $("#evResto").innerHTML = resto.length
-    ? `<div class="sec-tit">Más adelante <small>${resto.length} evento${resto.length>1?"s":""} anotado${resto.length>1?"s":""}</small></div>
-       ${resto.map(filaEventoHTML).join("")}`
-    : "";
-  // lo institucional va aparte: no son exámenes tuyos y no se editan
-  const acad=acadVigentes().slice(0,6);
-  $("#evAcad").innerHTML = acad.length
-    ? `<div class="sec-tit">Calendario de la Facultad <small>lo que viene según la Res. CD 476/2024</small></div>
-       ${acad.map(filaAcadHTML).join("")}`
-    : "";
-  bindAccionesEx("#vista-eventos");
-  actualizarBadge();
-}
-
 /* ---------------- mini calendario mensual ---------------- */
 /* Mes que se está mirando y día seleccionado. Se guardan sólo en memoria: son
    estado de navegación, no datos del usuario. */
@@ -2601,14 +2558,7 @@ function actualizarBadge(){
     const d=diasHasta(e.fecha); return d>=0&&d<=tope;
   }).length;
   const pintar=(sel,n)=>{ const b=$(sel); if(!b) return; b.hidden=!n; b.textContent=n; };
-  /* Del calendario institucional se cuenta lo que se mueve dentro de la ventana:
-     lo que está por empezar y lo que está en curso pero a punto de cerrarse. Un
-     período largo ya arrancado (una inscripción de un mes) no debe tener la
-     burbuja prendida durante semanas: eso no es "próximo", es "en curso". */
-  const acad=acadVigentes().filter(e=>
-    (e.ini>=0 && e.ini<=DIAS_URGENTE) || (e.ini<0 && e.fin<=DIAS_URGENTE)).length;
-  pintar("#badgeEventos", cuenta(DIAS_URGENTE)+acad);
-  pintar("#badgeAgenda",  cuenta(DIAS_PROXIMO));
+  pintar("#badgeAgenda", cuenta(DIAS_PROXIMO));
 }
 function abrirModalExamen(id){
   const e=(ST.examenes||[]).find(x=>x.id===id);
@@ -2673,7 +2623,6 @@ function abrirModalExamen(id){
 }
 $("#btnExamen").onclick=()=>abrirModalExamen();
 $("#btnIcsExamenes").onclick=exportarExamenesIcs;
-$("#btnExamenEv").onclick=()=>abrirModalExamen();
 
 /* ================= MAPA DE CORRELATIVAS ================= */
 const COL_CLARO={sin:{f:"#eef2f5",s:"#c2ced6",t:"#61798a"},cursando:{f:"#e0f9ff",s:"#00c0e2",t:"#0080a0"},
@@ -2795,11 +2744,7 @@ function sanearEstado(d){
   const pinPlegado = d.pinPlegado === true;
   const pinFirma = limpiar(d.pinFirma, 400);
   const grupoActivo = limpiar(d.grupoActivo, 60) || null;
-  const grVistos = {};
-  if (d.grVistos && typeof d.grVistos === "object")
-    for (const [k,v] of Object.entries(d.grVistos))
-      if (typeof v === "string") grVistos[limpiar(k,60)] = limpiar(v,40);
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, practicaSup, pinPlegado, pinFirma, grupoActivo, grVistos,
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, practicaSup, pinPlegado, pinFirma, grupoActivo,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -2820,6 +2765,23 @@ $("#inpImportar").onchange=e=>{
     e.target.value=""; };
   r.readAsText(f);
 };
+/* Fuerza la búsqueda de una versión nueva. El service worker sirve el HTML por
+   red primero, así que normalmente alcanza con reabrir; esto es para cuando el
+   navegador o la app instalada se quedaron con la copia guardada. */
+$("#btnActualizarApp").onclick=async()=>{
+  toast("Buscando actualizaciones…");
+  try {
+    if ("serviceWorker" in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      // update() vuelve a pedir el sw al servidor; si cambió, se instala el nuevo
+      await Promise.all(regs.map(r => r.update().catch(()=>{})));
+      for (const r of regs) if (r.waiting) r.waiting.postMessage("actualizar-ya");
+    }
+  } catch(e){}
+  // recarga saltando la caché del navegador
+  setTimeout(()=>location.reload(true), 600);
+};
+
 $("#btnReiniciar").onclick=()=>{
   if (confirm("¿Borrar TODO tu estado (materias, horario, agenda y simulador)? Esta acción no se puede deshacer.\nTip: exportá antes por las dudas."))
     { ST={version:1,estados:{},notas:{},aplazos:{},grilla:{},sim:{asumir:true,anios:[]},manuales:[],horarios:null,examenes:[],_mseq:0,_eseq:0}; COMISIONES=construirComisiones(COMISIONES_RAW.comisiones); guardar(); render(); }
@@ -2922,7 +2884,7 @@ async function grRefrescar(){
   if (grCargando) return;
   grCargando = true; grError = ""; renderCompartido();
   try {
-    await grCargarGrupos(); await grCargarEventos(); await grCargarMensajes(); await grCargarResumen();
+    await grCargarGrupos(); await grCargarEventos(); await grCargarResumen();
     /* Cuántos comentarios tiene cada evento, para mostrarlo en el botón sin
        tener que abrirlos de a uno. */
     const g = grActivo();
@@ -3191,7 +3153,7 @@ function grPintarBusqueda(){
 /* ================= COMENTARIOS Y CHAT =================
    Los comentarios cuelgan de cada evento; el chat, del grupo. Ninguno se
    edita: se escribe o se borra, así nadie cambia lo que los demás ya leyeron. */
-let grComentarios = {}, grMensajes = [], grEvAbierto = null, grConteos = {};
+let grComentarios = {}, grEvAbierto = null, grConteos = {};
 /* Resumen de cada grupo para las burbujas del selector: cuántos eventos vencen
    dentro de GR_DIAS_AVISO días y cuántos mensajes hay sin leer. Lo "sin leer" se
    mide contra la última vez que se miró ese grupo, guardada en ST. */
@@ -3200,36 +3162,23 @@ let grResumen = {};
 async function grCargarResumen(){
   grResumen = {};
   for (const g of grupos){
-    let evs = 0, msj = 0;
+    let evs = 0;
     try {
       const se = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"eventos"));
       evs = se.docs.filter(d => { const n = diasHasta(d.data().fecha);
         return n >= 0 && n <= GR_DIAS_AVISO; }).length;
     } catch(_){}
-    try {
-      const visto = (ST.grVistos||{})[g.id] || "";
-      const sm = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"mensajes"));
-      msj = sm.docs.filter(d => { const m = d.data();
-        return m.autor !== usuario.uid && (m.creado||"") > visto; }).length;
-    } catch(_){}
-    grResumen[g.id] = { evs, msj };
+    grResumen[g.id] = { evs };
   }
-}
-
-/* Al mirar un grupo, sus mensajes dejan de estar "sin leer". */
-function grMarcarLeido(gid){
-  ST.grVistos = { ...(ST.grVistos||{}), [gid]: new Date().toISOString() };
-  guardar();
 }
 
 function grTabsHTML(actual){
   if (grupos.length < 2) return "";
   return `<div class="gr-tabs">${grupos.map(g => {
-    const r = grResumen[g.id] || { evs:0, msj:0 };
+    const r = grResumen[g.id] || { evs:0 };
     return `<button class="gr-tab ${g.id===actual.id?"activo":""}" data-gr-ir="${g.id}">
       ${grAvatarHTML(g,true)}<span>${escHTML(g.nombre)}</span>
       ${r.evs?`<span class="gr-b ev" title="${r.evs} evento(s) esta semana">${r.evs}</span>`:""}
-      ${r.msj?`<span class="gr-b ms" title="${r.msj} mensaje(s) sin leer">${r.msj}</span>`:""}
     </button>`;
   }).join("")}</div>`;
 }
@@ -3240,12 +3189,6 @@ async function grCargarComentarios(eid){
   grComentarios[eid] = snap.docs.map(d => ({ id:d.id, ...d.data() }))
     .sort((a,b) => String(a.creado||"").localeCompare(String(b.creado||"")));
 }
-async function grCargarMensajes(){
-  const g = grActivo(); if (!g){ grMensajes = []; return; }
-  const snap = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"mensajes"));
-  grMensajes = snap.docs.map(d => ({ id:d.id, ...d.data() }))
-    .sort((a,b) => String(a.creado||"").localeCompare(String(b.creado||"")));
-}
 const cuandoTxt = iso => {
   if (!iso) return "";
   const d = new Date(iso), min = Math.floor((Date.now() - d.getTime())/60000);
@@ -3254,9 +3197,9 @@ const cuandoTxt = iso => {
   if (min < 1440) return `hace ${Math.floor(min/60)} h`;
   return d.toLocaleDateString("es-AR",{day:"numeric",month:"short"});
 };
-function msjHTML(m, g, attr){
+function msjHTML(m, g, attr, extra){
   const puedo = m.autor === usuario.uid || g.creador === usuario.uid;
-  return `<div class="msj">
+  return `<div class="msj ${extra||""}">
     <span class="au">${escHTML(m.autor===usuario.uid?"vos":(m.autorNombre||"alguien"))}</span>
     <span class="tx">${escHTML(m.texto)}</span>
     <span class="cu">${cuandoTxt(m.creado)}</span>
@@ -3282,23 +3225,6 @@ async function grBorrarComentario(eid, cid){
     await grCargarComentarios(eid); renderCompartido();
   } catch(e){ toast("No se pudo eliminar: " + explicar(e)); }
 }
-async function grEnviarMensaje(texto){
-  const g = grActivo(); if (!g || !texto.trim()) return;
-  try {
-    await FB.F.addDoc(FB.F.collection(FB.db,"grupos",g.id,"mensajes"),
-      { texto: texto.trim().slice(0,1000), autor: usuario.uid, autorNombre: miNombre(),
-        creado: new Date().toISOString() });
-    await grCargarMensajes(); renderCompartido();
-  } catch(e){ toast("No se pudo enviar: " + explicar(e)); }
-}
-async function grBorrarMensaje(mid){
-  const g = grActivo(); if (!g) return;
-  try {
-    await FB.F.deleteDoc(FB.F.doc(FB.db,"grupos",g.id,"mensajes",mid));
-    await grCargarMensajes(); renderCompartido();
-  } catch(e){ toast("No se pudo eliminar: " + explicar(e)); }
-}
-
 function grEventoHTML(e, g){
   const d = diasHasta(e.fecha), c = textoCuenta(d);
   const cls = d<0 ? "pasado" : d<=2 ? "urgente" : d<=7 ? "pronto" : "";
@@ -3381,28 +3307,13 @@ function renderCompartido(){
     </div>
     ${grError?`<div class="aviso">${escHTML(grError)}</div>`:""}
     <div class="gr-aviso">${g.miembros.length} de ${GR_MAX} integrantes · se actualiza al abrir la pestaña o con ↻</div>
-    <div class="layout-gr">
-      <div>
-        ${grAlertaHTML(fut)}
-        ${fut.length?`<div class="sec-tit">Lo que viene <small>${fut.length} evento${fut.length>1?"s":""}</small></div>
-          ${fut.map(e=>grEventoHTML(e,g)).join("")}`
-         :`<div class="vacio">Todavía no hay eventos cargados en este grupo.</div>`}
-        ${pas.length?`<div class="sec-tit">Ya pasaron <small>${pas.length} evento${pas.length>1?"s":""}</small></div>
-          ${pas.map(e=>grEventoHTML(e,g)).join("")}`:""}
-      </div>
-      <div class="gr-chat">
-        <div class="cab">${grAvatarHTML(g,true)}<b>Chat del grupo</b>
-          ${grMensajes.length?`<span class="gr-burbuja">${grMensajes.length}</span>`:""}</div>
-        <div class="cuerpo" id="grChatCuerpo">
-          ${grMensajes.length
-            ? grMensajes.map(m=>msjHTML(m,g,"data-gr-delmsj")).join("")
-            : `<div class="gr-nada">Todavía no hay mensajes. Escribí el primero.</div>`}
-        </div>
-        <div class="pie">${escritorHTML("grMsjInput","Escribí un mensaje…")}</div>
-      </div>
-    </div>`;
+    ${grAlertaHTML(fut)}
+    ${fut.length?`<div class="sec-tit">Lo que viene <small>${fut.length} evento${fut.length>1?"s":""}</small></div>
+      ${fut.map(e=>grEventoHTML(e,g)).join("")}`
+     :`<div class="vacio">Todavía no hay eventos cargados en este grupo.</div>`}
+    ${pas.length?`<div class="sec-tit">Ya pasaron <small>${pas.length} evento${pas.length>1?"s":""}</small></div>
+      ${pas.map(e=>grEventoHTML(e,g)).join("")}`:""}`;
 
-  grMarcarLeido(g.id);        // al mirarlo, sus mensajes dejan de estar sin leer
   $$("#grCont [data-gr-ir]").forEach(b => b.onclick = async () => {
     ST.grupoActivo = b.dataset.grIr; guardar(); await grRefrescar();
   });
@@ -3442,14 +3353,13 @@ function renderCompartido(){
     if (confirm("¿Eliminar el mensaje?")) grBorrarMensaje(b.dataset.grDelmsj);
   });
 
-  /* Enviar: el botón y la tecla Enter hacen lo mismo. El identificador del campo
-     dice si es el chat del grupo o el comentario de un evento. */
+  /* Enviar: el botón y la tecla Enter hacen lo mismo. Todos los escritores que
+     quedan son comentarios de un evento, y el identificador lleva su id. */
   const enviar = id => {
     const inp = document.getElementById(id);
     if (!inp || !inp.value.trim()) return;
     const txt = inp.value; inp.value = "";
-    if (id === "grMsjInput") grEnviarMensaje(txt);
-    else grEnviarComentario(id.replace("geCom",""), txt);
+    grEnviarComentario(id.replace("geCom",""), txt);
   };
   $$("#grCont [data-env]").forEach(b => b.onclick = () => enviar(b.dataset.env));
   $$("#grCont .gr-esc input").forEach(i => i.onkeydown = ev => {
@@ -3725,7 +3635,7 @@ function pintarPie(){
 /* ================= ORDEN DE LAS SOLAPAS =================
    El orden vive en ST, así que viaja con la cuenta: si alguien lo acomoda en la
    computadora, lo encuentra igual en el celular. */
-const VISTAS = ["materias","grilla","instalar","compartido","eventos","agenda","mapa","simulador","avance"];
+const VISTAS = ["materias","grilla","instalar","compartido","agenda","mapa","simulador","avance"];
 
 /* Lo guardado primero, y atrás lo que falte. Así, cuando una versión nueva suma
    una solapa, aparece al final en vez de desaparecer. */
@@ -3833,7 +3743,6 @@ function render(){
   if (vista==="grilla") renderGrilla();
   if (vista==="compartido") renderCompartido();
   if (vista==="instalar") renderInstalar();
-  if (vista==="eventos") renderEventos();
   if (vista==="agenda") renderAgenda();
   if (vista==="mapa") renderMapa();
   if (vista==="simulador") renderSim();
