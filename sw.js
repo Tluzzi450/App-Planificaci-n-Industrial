@@ -11,7 +11,7 @@
  *
  * Al publicar una versión nueva: cambiá VERSION. Eso descarta la caché vieja.
  */
-const VERSION = "2026.08.22";
+const VERSION = "2026.08.23";
 const CACHE = "planificador-industrial-" + VERSION;
 
 const ESENCIALES = [
@@ -19,6 +19,7 @@ const ESENCIALES = [
   "./index.html",
   "./manifest.webmanifest",
   "./icon-192.png",
+  "./icon-notif.png",
   "./icon-512.png",
   "./icon-maskable-512.png",
   "./apple-touch-icon.png",
@@ -93,8 +94,11 @@ self.addEventListener("push", ev => {
   const titulo = d.titulo || "Planificador UTN";
   ev.waitUntil(self.registration.showNotification(titulo, {
     body: d.cuerpo || "Tenés un examen cerca.",
-    icon: "./icon-192.png",
-    badge: "./icon-192.png",
+    icon: "./icon-192.png",          // el grande, a color, dentro del aviso
+    /* El chico de la barra de estado NO puede tener fondo: Android ignora el
+       color y arma la silueta con la transparencia, así que un ícono con fondo
+       sólido sale como un cuadrado blanco. Este es el isotipo recortado. */
+    badge: "./icon-notif.png",
     tag: d.tag || "examen",          // un aviso por examen: no se apilan repetidos
     renotify: false,
     data: { url: d.url || "./?v=agenda" },
