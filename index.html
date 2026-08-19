@@ -251,15 +251,14 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .filtros-com .limpiar:hover{border-color:var(--acento)}
 .com-op.oculta-filtro{display:none}
 .sin-coms{padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--gris)}
-/* ---------- práctica supervisada ---------- */
-.ps-panel{background:var(--blanco);border:1px solid var(--borde);border-left:5px solid var(--magenta);
-  border-radius:12px;padding:16px 18px;margin-top:26px;box-shadow:var(--sombra);max-width:760px}
-.ps-panel h3{color:var(--petrol);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.ps-panel .desc{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 12px}
-.ps-panel .datos{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;
-  color:var(--muted);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--linea)}
-.ps-estados{display:flex;gap:6px;flex-wrap:wrap}
-.ps-estados .pill{cursor:pointer}
+/* ---------- práctica supervisada ----------
+   Es una tarjeta más de la grilla, del mismo tamaño que las materias: hereda
+   .card y sólo agrega el borde magenta que la distingue. Lo largo —qué es y por
+   qué no cuenta para el avance— vive en su modal, no acá. */
+.ps-card{border-left:4px solid var(--magenta)}
+.ps-card .datos{font-size:11px;font-weight:600;color:var(--gris)}
+.ps-estados{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto}
+.ps-estados .pill{cursor:pointer;font-size:11px;padding:2px 8px}
 .ps-estados .pill.activo{outline:2px solid var(--acento);outline-offset:1px}
 /* ---------- exportar a calendario ---------- */
 .btn-mini.cal{color:var(--petrol);font-weight:700}
@@ -297,11 +296,30 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .gr-ev .acc{display:flex;gap:5px;flex-basis:100%;margin-top:2px}
 .gr-aviso{font-size:12px;color:var(--gris);font-weight:600;margin-bottom:12px}
 /* ---------- avisos al celular ---------- */
-.av-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
-  padding:16px 18px;margin-top:22px;box-shadow:var(--sombra);max-width:760px}
-.av-caja h3{color:var(--petrol);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.av-caja p{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 12px}
-.av-caja .acc{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+/* Va en la misma fila que el selector de vistas, a la derecha: dos botones
+   chicos en lugar del recuadro con párrafo que ocupaba media pantalla. */
+.av-fila{display:flex;align-items:center;gap:6px;margin-left:auto}
+.av-bell{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;
+  border-radius:9px;padding:7px 13px;font-weight:700;font-size:12.5px;transition:.15s;line-height:1}
+.av-bell .p{width:8px;height:8px;border-radius:50%;flex:none}
+.av-bell.on{background:#eef8dc;border-color:#cfe8a2;color:var(--verde-txt)}
+.av-bell.on .p{background:var(--verde)}
+.av-bell.off{background:#ffe8ec;border-color:#ffb9c4;color:#a00018}
+.av-bell.off .p{background:var(--rojo)}
+.av-bell:hover{filter:brightness(.96)}
+.av-bell[disabled]{opacity:.55;cursor:default}
+html[data-tema="oscuro"] .av-bell.on{background:#1e3312;border-color:#3c5c26;color:#bde08a}
+html[data-tema="oscuro"] .av-bell.off{background:#3d1620;border-color:#6b2534;color:#ff9fae}
+.av-info{width:28px;height:28px;border-radius:50%;border:1px solid var(--borde);
+  background:var(--blanco);color:var(--gris);font-weight:800;font-size:12.5px;flex:none;line-height:1}
+.av-info:hover{border-color:var(--acento);color:var(--petrol)}
+.av-detalle{background:var(--blanco);border:1px solid var(--borde);border-radius:11px;
+  padding:13px 16px;margin-bottom:14px;box-shadow:var(--sombra);max-width:760px}
+.av-detalle p{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 8px}
+.av-detalle p:last-child{margin:0}
+/* la fila del selector deja de tener margen propio: lo pone el contenedor */
+.ag-barra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.ag-barra .ag-modos{margin-bottom:0}
 /* ---------- selector de grupos con sus dos burbujas ---------- */
 .gr-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
 .gr-tab{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--borde);
@@ -686,8 +704,11 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
           <button class="btn" id="btnIcsExamenes">📅 Exportar todo al calendario</button>
           <span class="nota">con avisos 5, 2 y 1 día antes</span>
         </div>
-        <div class="ag-modos" id="agModos"></div>
-        <div id="avisosPush"></div>
+        <div class="ag-barra">
+          <div class="ag-modos" id="agModos"></div>
+          <div class="av-fila" id="avisosPush"></div>
+        </div>
+        <div id="avisosDetalle"></div>
         <div id="proximos10"></div>
         <div id="burbujas"></div>
         <div id="examenesPasados"></div>
@@ -736,7 +757,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.23 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.24 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -1000,21 +1021,38 @@ const estadoPS = () => PS_ESTADOS[ST.practicaSup] ? ST.practicaSup : "pendiente"
 function renderPracticaSup(){
   const c=$("#practicaSup"); if(!c) return;
   const e=estadoPS();
-  c.innerHTML=`<div class="ps-panel">
-    <h3>🏭 ${PS.nombre} <span class="pill ${PS_ESTADOS[e].cls}">${PS_ESTADOS[e].txt}</span></h3>
-    <p class="desc">Son las horas de práctica profesional en una empresa u organismo, no una materia
-      que se curse. Por eso va aparte y no entra en el porcentaje de avance de la carrera.</p>
-    <div class="datos">
-      <span>Comisión ${PS.curso}</span><span>${PS.nivel}.º nivel</span><span>Anual</span>
-      <span>${PS.hs} horas</span><span>${PS.dia} ${PS.horario}</span>
+  // se dibuja dentro de la misma grilla que las materias, como una tarjeta más
+  c.innerHTML=`<div class="grid-mat" style="margin-top:10px"><div class="card ps-card">
+    <div class="tit">
+      <span class="orden">PS</span>
+      <span class="nom">${PS.nombre}</span>
     </div>
+    <div class="fila-chips">
+      <span class="pill ${PS_ESTADOS[e].cls}">${PS_ESTADOS[e].txt}</span>
+      <button class="av-info" id="psInfo" title="Qué es la práctica supervisada"
+        style="width:22px;height:22px;font-size:11px">i</button>
+    </div>
+    <div class="datos">${PS.nivel}.º nivel · anual · ${PS.hs} h</div>
     <div class="ps-estados">${Object.entries(PS_ESTADOS).map(([k,v])=>
       `<span class="pill ${v.cls} ${k===e?"activo":""}" data-ps="${k}">${v.txt}</span>`).join("")}</div>
-  </div>`;
+  </div></div>`;
   $$("#practicaSup [data-ps]").forEach(p=>p.onclick=()=>{
     ST.practicaSup=p.dataset.ps; guardar(); renderPracticaSup();
     toast("Práctica supervisada: "+PS_ESTADOS[p.dataset.ps].txt.toLowerCase());
   });
+  $("#psInfo").onclick=()=>{
+    $("#modal").innerHTML=`
+      <button class="cerrar" onclick="cerrarModal()">✕</button>
+      <h3>${PS.nombre}</h3>
+      <div class="sub">Comisión ${PS.curso} · ${PS.nivel}.º nivel</div>
+      <section><b>Qué es</b>
+        Son las horas de práctica profesional en una empresa u organismo, no una materia que se curse.
+        Por eso va aparte y no entra en el porcentaje de avance de la carrera.</section>
+      <section><b>Datos</b>
+        ${PS.hs} horas · anual · ${PS.dia} de ${PS.horario} · ${escHTML(PS.docente)}</section>
+      <div class="modal-acc"><button class="btn primario" onclick="cerrarModal()">Entendido</button></div>`;
+    $("#velo").classList.add("abierto");
+  };
 }
 
 function renderMaterias(){
@@ -2608,34 +2646,52 @@ async function sincronizarAvisos(){
   if (sub) { try { await guardarSuscripcion(sub); } catch(_){} }
 }
 
+/* El explicativo no ocupa lugar hasta que alguien toca la (i): sólo estado de
+   pantalla, no se guarda. */
+let avisosAbierto = false;
+
+function textoAvisos(caso){
+  const p = {
+    activo: ["Recibís un aviso <b>5 días antes, 2 días antes y la víspera</b> de cada examen anotado, aunque tengas la app cerrada.",
+             "Se actualizan solos cuando agregás o borrás un examen. Valen para este dispositivo: si querés también en otro, activalos ahí."],
+    inactivo: ["Si los activás, el planificador te avisa al celular <b>5 días antes, 2 días antes y la víspera</b> de cada examen anotado.",
+               "Los avisos llegan aunque tengas la app cerrada. Se activan por dispositivo."],
+    bloqueado: ["Los avisos están bloqueados para este sitio en tu navegador.",
+                "Para volver a activarlos entrá a los permisos del sitio —el candado al lado de la dirección— y habilitá las notificaciones."],
+    sinsoporte: ["Este navegador no permite avisos.",
+                 "En iPhone hay que instalar la app desde Safari con «Agregar a pantalla de inicio». En computadora, usar Chrome, Edge o Firefox."],
+    sinsesion: ["Iniciá sesión para que el planificador te avise unos días antes de cada examen."],
+  }[caso] || [];
+  return p.map(t => `<p>${t}</p>`).join("");
+}
+
+function pintarDetalleAvisos(caso){
+  const d = $("#avisosDetalle"); if (!d) return;
+  d.innerHTML = avisosAbierto ? `<div class="av-detalle">${textoAvisos(caso)}</div>` : "";
+}
+
 function renderAvisos(){
   const c = $("#avisosPush"); if (!c) return;
-  if (!pushSoportado())
-    return void (c.innerHTML = `<div class="av-caja"><h3>🔔 Avisos de exámenes</h3>
-      <p>Este navegador no permite avisos. En iPhone hay que instalar la app desde Safari con «Agregar a pantalla de inicio»; en computadora, usar Chrome, Edge o Firefox.</p></div>`);
-  if (!syncConfigurado() || !usuario)
-    return void (c.innerHTML = `<div class="av-caja"><h3>🔔 Avisos de exámenes</h3>
-      <p>Iniciá sesión para que el planificador te avise al celular unos días antes de cada examen.</p></div>`);
 
-  const estado = Notification.permission;
+  const botonInfo = `<button class="av-info" id="avInfo" title="Cómo funcionan los avisos">i</button>`;
+  const armar = (clase, texto, caso, apagado) => {
+    c.innerHTML = `<button class="av-bell ${clase}" id="avBell"${apagado?" disabled":""}>
+        <span class="p"></span>🔔 ${texto}</button>${botonInfo}`;
+    pintarDetalleAvisos(caso);
+    $("#avInfo").onclick = () => { avisosAbierto = !avisosAbierto; pintarDetalleAvisos(caso); };
+    return $("#avBell");
+  };
+
+  if (!pushSoportado())            return void armar("off","Avisos","sinsoporte",true);
+  if (!syncConfigurado()||!usuario) return void armar("off","Avisos","sinsesion",true);
+  if (Notification.permission === "denied") return void armar("off","Avisos","bloqueado",true);
+
   suscripcionActual().then(sub => {
-    const activo = estado === "granted" && !!sub;
-    c.innerHTML = `<div class="av-caja">
-      <h3>🔔 Avisos de exámenes ${activo?`<span class="pill est-aprobada">Activados</span>`:""}</h3>
-      <p>${activo
-        ? "Vas a recibir un aviso 5 días antes, 2 días antes y la víspera de cada examen que tengas anotado. Se envían a este dispositivo, aunque tengas la app cerrada."
-        : estado === "denied"
-          ? "Los avisos están bloqueados para este sitio. Para volver a activarlos, entrá a los permisos del sitio en tu navegador y habilitá las notificaciones."
-          : "Activalos y el planificador te avisa 5 días antes, 2 días antes y la víspera de cada examen, aunque tengas la app cerrada."}</p>
-      <div class="acc">
-        ${estado === "denied" ? "" : activo
-          ? `<button class="btn" id="avOff">Desactivar</button>`
-          : `<button class="btn primario" id="avOn">Activar avisos</button>`}
-        ${activo?`<span class="gr-aviso" style="margin:0">Se actualizan solos cuando agregás o borrás un examen.</span>`:""}
-      </div></div>`;
-    const on = $("#avOn"), off = $("#avOff");
-    if (on) on.onclick = activarAvisos;
-    if (off) off.onclick = desactivarAvisos;
+    const activo = Notification.permission === "granted" && !!sub;
+    const b = armar(activo?"on":"off", activo?"Avisos activados":"Avisos desactivados",
+                    activo?"activo":"inactivo", false);
+    b.title = activo ? "Tocá para desactivar los avisos" : "Tocá para activar los avisos";
+    b.onclick = activo ? desactivarAvisos : activarAvisos;
   });
 }
 
