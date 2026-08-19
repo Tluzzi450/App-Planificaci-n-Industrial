@@ -11,7 +11,7 @@
  *
  * Al publicar una versión nueva: cambiá VERSION. Eso descarta la caché vieja.
  */
-const VERSION = "2026.08.21";
+const VERSION = "2026.08.22";
 const CACHE = "planificador-industrial-" + VERSION;
 
 const ESENCIALES = [
@@ -84,6 +84,36 @@ self.addEventListener("fetch", ev => {
 });
 
 // permite que la página fuerce la actualización sin esperar a que se cierren las pestañas
+/* ================= AVISOS DE EXÁMENES =================
+   El navegador entrega el aviso al service worker aunque la app esté cerrada:
+   por eso esto vive acá y no en la página. */
+self.addEventListener("push", ev => {
+  let d = {};
+  try { d = ev.data ? ev.data.json() : {}; } catch(_){ d = { cuerpo: ev.data && ev.data.text() }; }
+  const titulo = d.titulo || "Planificador UTN";
+  ev.waitUntil(self.registration.showNotification(titulo, {
+    body: d.cuerpo || "Tenés un examen cerca.",
+    icon: "./icon-192.png",
+    badge: "./icon-192.png",
+    tag: d.tag || "examen",          // un aviso por examen: no se apilan repetidos
+    renotify: false,
+    data: { url: d.url || "./?v=agenda" },
+  }));
+});
+
+/* Al tocar el aviso: si la app ya está abierta se la trae al frente en vez de
+   abrir otra pestaña. */
+self.addEventListener("notificationclick", ev => {
+  ev.notification.close();
+  const destino = (ev.notification.data && ev.notification.data.url) || "./?v=agenda";
+  ev.waitUntil((async () => {
+    const abiertas = await self.clients.matchAll({ type:"window", includeUncontrolled:true });
+    for (const c of abiertas)
+      if (c.url.includes(self.registration.scope) && "focus" in c) return c.focus();
+    if (self.clients.openWindow) return self.clients.openWindow(destino);
+  })());
+});
+
 self.addEventListener("message", ev => {
   if (ev.data === "actualizar-ya") self.skipWaiting();
 });

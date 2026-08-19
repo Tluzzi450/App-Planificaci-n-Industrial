@@ -296,6 +296,12 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .gr-ev .quien{font-size:11px;font-weight:600;color:var(--gris);white-space:nowrap}
 .gr-ev .acc{display:flex;gap:5px;flex-basis:100%;margin-top:2px}
 .gr-aviso{font-size:12px;color:var(--gris);font-weight:600;margin-bottom:12px}
+/* ---------- avisos al celular ---------- */
+.av-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
+  padding:16px 18px;margin-top:22px;box-shadow:var(--sombra);max-width:760px}
+.av-caja h3{color:var(--petrol);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.av-caja p{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 12px}
+.av-caja .acc{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 /* ---------- selector de grupos con sus dos burbujas ---------- */
 .gr-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
 .gr-tab{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--borde);
@@ -681,6 +687,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
           <span class="nota">con avisos 5, 2 y 1 día antes</span>
         </div>
         <div class="ag-modos" id="agModos"></div>
+        <div id="avisosPush"></div>
         <div id="proximos10"></div>
         <div id="burbujas"></div>
         <div id="examenesPasados"></div>
@@ -729,7 +736,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.21 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.22 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2512,8 +2519,129 @@ function agendaPorMateria(){
        + sinProx.map(x=>grupoHTML(x.k, x.ord, "pasado")).join("");
 }
 
+/* ================= AVISOS AL CELULAR =================
+   Web Push con claves VAPID: es un estándar del navegador, sin intermediarios ni
+   servicios de terceros. La app sólo registra la suscripción; quien decide a
+   quién avisar y cuándo es una tarea que corre una vez por día (ver README).
+
+   La suscripción se guarda en un documento aparte de Firestore, no dentro del
+   progreso: el enviador necesita leerla sin tener que desarmar todo el estado,
+   y así tampoco toca datos personales. */
+const VAPID_PUBLICA = "BIYa77oUbV_Aj5X12DQTKh6R_8D2-vOi_ILkBosYKOn0LmiFcFZIU4PlannSpeQ33ZWpBZRSjdrk62SwQ3LhB44";
+
+const pushSoportado = () => "serviceWorker" in navigator && "PushManager" in window
+  && "Notification" in window && /^https?:$/.test(location.protocol);
+
+/* La clave viaja en base64 "de URL"; el navegador la quiere como bytes. */
+function claveABytes(b64){
+  const pad = "=".repeat((4 - b64.length % 4) % 4);
+  const limpio = (b64 + pad).replace(/-/g,"+").replace(/_/g,"/");
+  const bruto = atob(limpio);
+  return Uint8Array.from([...bruto].map(c => c.charCodeAt(0)));
+}
+
+async function suscripcionActual(){
+  if (!pushSoportado()) return null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    return await reg.pushManager.getSubscription();
+  } catch(_){ return null; }
+}
+
+async function activarAvisos(){
+  if (!usuario) return toast("Iniciá sesión para recibir avisos en este dispositivo");
+  try {
+    const permiso = await Notification.requestPermission();
+    if (permiso !== "granted"){
+      renderAvisos();
+      return toast(permiso === "denied"
+        ? "Los avisos quedaron bloqueados para este sitio"
+        : "No se activaron los avisos");
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,                       // obligatorio: todo aviso se muestra
+      applicationServerKey: claveABytes(VAPID_PUBLICA),
+    });
+    await guardarSuscripcion(sub);
+    toast("Listo: vas a recibir avisos de tus exámenes");
+  } catch(e){
+    toast("No se pudieron activar: " + (e && e.message ? e.message : "error"));
+  }
+  renderAvisos();
+}
+
+async function desactivarAvisos(){
+  try {
+    const sub = await suscripcionActual();
+    if (sub) await sub.unsubscribe();
+    if (usuario && FB) await FB.F.deleteDoc(FB.F.doc(FB.db,"avisos",usuario.uid)).catch(()=>{});
+    toast("Avisos desactivados en este dispositivo");
+  } catch(e){ toast("No se pudo desactivar"); }
+  renderAvisos();
+}
+
+/* Se guarda la suscripción junto con las fechas de los exámenes que faltan: el
+   enviador necesita las dos cosas y así lee un solo documento por persona. */
+async function guardarSuscripcion(sub){
+  if (!usuario || !FB || !sub) return;
+  const j = sub.toJSON();
+  await FB.F.setDoc(FB.F.doc(FB.db,"avisos",usuario.uid), {
+    endpoint: j.endpoint,
+    p256dh: j.keys.p256dh,
+    auth: j.keys.auth,
+    nombre: (usuario.displayName || "").slice(0,60),
+    examenes: futurosHasta(null).slice(0,40).map(e => ({
+      id: String(e.id), fecha: e.fecha,
+      materia: nombreMateriaEx(e).slice(0,80),
+      tipo: TIPOS_EX[e.tipo] || "Examen",
+    })),
+    actualizado: new Date().toISOString(),
+  });
+}
+
+/* Cada vez que cambian los exámenes hay que refrescar lo que el enviador va a
+   leer; si no, avisaría por fechas viejas. */
+async function sincronizarAvisos(){
+  if (!usuario || !FB) return;
+  const sub = await suscripcionActual();
+  if (sub) { try { await guardarSuscripcion(sub); } catch(_){} }
+}
+
+function renderAvisos(){
+  const c = $("#avisosPush"); if (!c) return;
+  if (!pushSoportado())
+    return void (c.innerHTML = `<div class="av-caja"><h3>🔔 Avisos de exámenes</h3>
+      <p>Este navegador no permite avisos. En iPhone hay que instalar la app desde Safari con «Agregar a pantalla de inicio»; en computadora, usar Chrome, Edge o Firefox.</p></div>`);
+  if (!syncConfigurado() || !usuario)
+    return void (c.innerHTML = `<div class="av-caja"><h3>🔔 Avisos de exámenes</h3>
+      <p>Iniciá sesión para que el planificador te avise al celular unos días antes de cada examen.</p></div>`);
+
+  const estado = Notification.permission;
+  suscripcionActual().then(sub => {
+    const activo = estado === "granted" && !!sub;
+    c.innerHTML = `<div class="av-caja">
+      <h3>🔔 Avisos de exámenes ${activo?`<span class="pill est-aprobada">Activados</span>`:""}</h3>
+      <p>${activo
+        ? "Vas a recibir un aviso 5 días antes, 2 días antes y la víspera de cada examen que tengas anotado. Se envían a este dispositivo, aunque tengas la app cerrada."
+        : estado === "denied"
+          ? "Los avisos están bloqueados para este sitio. Para volver a activarlos, entrá a los permisos del sitio en tu navegador y habilitá las notificaciones."
+          : "Activalos y el planificador te avisa 5 días antes, 2 días antes y la víspera de cada examen, aunque tengas la app cerrada."}</p>
+      <div class="acc">
+        ${estado === "denied" ? "" : activo
+          ? `<button class="btn" id="avOff">Desactivar</button>`
+          : `<button class="btn primario" id="avOn">Activar avisos</button>`}
+        ${activo?`<span class="gr-aviso" style="margin:0">Se actualizan solos cuando agregás o borrás un examen.</span>`:""}
+      </div></div>`;
+    const on = $("#avOn"), off = $("#avOff");
+    if (on) on.onclick = activarAvisos;
+    if (off) off.onclick = desactivarAvisos;
+  });
+}
+
 function renderAgenda(){
   renderModosAgenda();
+  renderAvisos();
   const modo=modoAgenda();
   renderCalendario();
 
@@ -2601,7 +2729,7 @@ function abrirModalExamen(id){
       ${e?`<button class="btn peligro" id="exEliminar" style="margin-left:auto">Eliminar</button>`:""}
     </div>`;
   const bEl=$("#exEliminar");
-  if(bEl) bEl.onclick=()=>{ ST.examenes=ST.examenes.filter(x=>x.id!==id); guardar(); cerrarModal(); render(); };
+  if(bEl) bEl.onclick=()=>{ ST.examenes=ST.examenes.filter(x=>x.id!==id); guardar(); sincronizarAvisos(); cerrarModal(); render(); };
   $("#exGuardar").onclick=()=>{
     const err=$("#exError"), fecha=$("#exFecha").value;
     if(!fecha){ err.textContent="⚠ Elegí la fecha del examen."; err.style.display="block"; return; }
@@ -2611,8 +2739,9 @@ function abrirModalExamen(id){
                   notas:limpiar($("#exNotas").value, LARGO.notas, true) };
     if(e) Object.assign(e,datos);
     else { ST._eseq=(ST._eseq||0)+1; (ST.examenes=ST.examenes||[]).push({id:ST._eseq, ...datos}); }
-    guardar(); cerrarModal();
-    // si el examen se cargó desde "Eventos próximos", no lo saco de esa pestaña
+    guardar(); sincronizarAvisos();   // el enviador tiene que ver la fecha nueva
+    cerrarModal();
+    //
     if(vista!=="eventos") vista="agenda";
     $$(".nav-int button[data-vista]").forEach(x=>x.classList.toggle("activa",x.dataset.vista===vista));
     VISTAS.forEach(v=>$("#vista-"+v).hidden=v!==vista);
