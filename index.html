@@ -251,15 +251,6 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .filtros-com .limpiar:hover{border-color:var(--acento)}
 .com-op.oculta-filtro{display:none}
 .sin-coms{padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--gris)}
-/* ---------- práctica supervisada ----------
-   Es una tarjeta más de la grilla, del mismo tamaño que las materias: hereda
-   .card y sólo agrega el borde magenta que la distingue. Lo largo —qué es y por
-   qué no cuenta para el avance— vive en su modal, no acá. */
-.ps-card{border-left:4px solid var(--magenta)}
-.ps-card .datos{font-size:11px;font-weight:600;color:var(--gris)}
-.ps-estados{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto}
-.ps-estados .pill{cursor:pointer;font-size:11px;padding:2px 8px}
-.ps-estados .pill.activo{outline:2px solid var(--acento);outline-offset:1px}
 /* ---------- exportar a calendario ---------- */
 .btn-mini.cal{color:var(--petrol);font-weight:700}
 .btn-mini.cal:hover{border-color:var(--acento);background:var(--suave)}
@@ -642,7 +633,6 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <button class="btn primario" id="btnAutogestion">📋 Importar desde autogestión</button>
     </div>
     <div id="contMaterias"></div>
-    <div id="practicaSup"></div>
   </div>
 
   <div id="vista-grilla" hidden>
@@ -757,7 +747,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.24 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.25 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -1002,57 +992,6 @@ function notaTarjetaHTML(o){
   const n=ST.notas[o];
   if(n==null) return "";
   return `<div class="nota-final">Nota final: <b>${n}</b></div>`;
-}
-
-/* ================= PRÁCTICA SUPERVISADA =================
-   No es una materia del plan: son las horas de práctica profesional. Por eso vive
-   fuera del CATALOGO y no entra en el porcentaje de avance ni en el simulador,
-   que cuentan materias. Sólo se registra en qué etapa está.
-   Los datos salen del informe de horarios de la Facultad (curso PS, 5.º nivel). */
-const PS = { nombre:"Práctica Supervisada", curso:"PS", nivel:5, hs:200,
-             dia:"Lunes", horario:"18:30 a 22:15", docente:"VILLARIO, Luis Antonio" };
-const PS_ESTADOS = {
-  pendiente: { txt:"Pendiente",  cls:"est-sin" },
-  curso:     { txt:"En curso",   cls:"est-cursando" },
-  hecha:     { txt:"Completada", cls:"est-aprobada" },
-};
-const estadoPS = () => PS_ESTADOS[ST.practicaSup] ? ST.practicaSup : "pendiente";
-
-function renderPracticaSup(){
-  const c=$("#practicaSup"); if(!c) return;
-  const e=estadoPS();
-  // se dibuja dentro de la misma grilla que las materias, como una tarjeta más
-  c.innerHTML=`<div class="grid-mat" style="margin-top:10px"><div class="card ps-card">
-    <div class="tit">
-      <span class="orden">PS</span>
-      <span class="nom">${PS.nombre}</span>
-    </div>
-    <div class="fila-chips">
-      <span class="pill ${PS_ESTADOS[e].cls}">${PS_ESTADOS[e].txt}</span>
-      <button class="av-info" id="psInfo" title="Qué es la práctica supervisada"
-        style="width:22px;height:22px;font-size:11px">i</button>
-    </div>
-    <div class="datos">${PS.nivel}.º nivel · anual · ${PS.hs} h</div>
-    <div class="ps-estados">${Object.entries(PS_ESTADOS).map(([k,v])=>
-      `<span class="pill ${v.cls} ${k===e?"activo":""}" data-ps="${k}">${v.txt}</span>`).join("")}</div>
-  </div></div>`;
-  $$("#practicaSup [data-ps]").forEach(p=>p.onclick=()=>{
-    ST.practicaSup=p.dataset.ps; guardar(); renderPracticaSup();
-    toast("Práctica supervisada: "+PS_ESTADOS[p.dataset.ps].txt.toLowerCase());
-  });
-  $("#psInfo").onclick=()=>{
-    $("#modal").innerHTML=`
-      <button class="cerrar" onclick="cerrarModal()">✕</button>
-      <h3>${PS.nombre}</h3>
-      <div class="sub">Comisión ${PS.curso} · ${PS.nivel}.º nivel</div>
-      <section><b>Qué es</b>
-        Son las horas de práctica profesional en una empresa u organismo, no una materia que se curse.
-        Por eso va aparte y no entra en el porcentaje de avance de la carrera.</section>
-      <section><b>Datos</b>
-        ${PS.hs} horas · anual · ${PS.dia} de ${PS.horario} · ${escHTML(PS.docente)}</section>
-      <div class="modal-acc"><button class="btn primario" onclick="cerrarModal()">Entendido</button></div>`;
-    $("#velo").classList.add("abierto");
-  };
 }
 
 function renderMaterias(){
@@ -2925,11 +2864,10 @@ function sanearEstado(d){
     recursantes: fc.recursantes !== false,
   };
   const modoAgenda = ["fecha","mes","materia"].includes(d.modoAgenda) ? d.modoAgenda : "fecha";
-  const practicaSup = ["pendiente","curso","hecha"].includes(d.practicaSup) ? d.practicaSup : "pendiente";
   const pinPlegado = d.pinPlegado === true;
   const pinFirma = limpiar(d.pinFirma, 400);
   const grupoActivo = limpiar(d.grupoActivo, 60) || null;
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, practicaSup, pinPlegado, pinFirma, grupoActivo,
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, pinPlegado, pinFirma, grupoActivo,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -3924,7 +3862,7 @@ function render(){
   renderPin();
   renderBanner();
   actualizarBadge();
-  if (vista==="materias"){ renderMaterias(); renderPracticaSup(); }
+  if (vista==="materias") renderMaterias();
   if (vista==="grilla") renderGrilla();
   if (vista==="compartido") renderCompartido();
   if (vista==="instalar") renderInstalar();
