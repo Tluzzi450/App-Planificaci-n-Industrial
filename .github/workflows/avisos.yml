@@ -1,8 +1,8 @@
 # Manda los avisos de exámenes una vez por día.
 #
 # Ojo con dos cosas de GitHub Actions:
-#  · Los horarios son SIEMPRE en UTC, sin zona horaria. 11:00 UTC son las 8 de
-#    la mañana en Argentina.
+#  · Los horarios son SIEMPRE en UTC, sin zona horaria.
+#    Argentina está en UTC-3 todo el año, así que 12:00 UTC son las 9 de la mañana.
 #  · En repositorios públicos, las tareas programadas se desactivan solas tras
 #    60 días sin actividad. Si dejás el repo quieto dos meses, los avisos paran
 #    sin aviso. Entrá cada tanto o hacé un cambio.
@@ -10,7 +10,7 @@ name: Avisos de exámenes
 
 on:
   schedule:
-    - cron: "0 11 * * *"      # 08:00 en Argentina
+    - cron: "0 12 * * *"      # 09:00 en Argentina (UTC-3, sin horario de verano)
   workflow_dispatch:           # además, un botón para dispararlo a mano
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Instalar dependencias
         run: npm install web-push firebase-admin --no-save
@@ -33,3 +33,4 @@ jobs:
           VAPID_CONTACTO: ${{ secrets.VAPID_CONTACTO }}
           FIREBASE_CUENTA: ${{ secrets.FIREBASE_CUENTA }}
         run: node enviar-avisos.js
+
