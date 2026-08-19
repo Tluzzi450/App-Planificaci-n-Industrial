@@ -747,7 +747,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.25 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.26 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2579,11 +2579,20 @@ async function guardarSuscripcion(sub){
 
 /* Cada vez que cambian los exámenes hay que refrescar lo que el enviador va a
    leer; si no, avisaría por fechas viejas. */
+/* Si la actualización falla —típicamente por estar sin señal— queda anotado que
+   hay algo pendiente y se reintenta al volver la conexión o al abrir la app. Sin
+   esto, alguien que borra un examen en el subte podría recibir igual su aviso. */
+let avisosPendiente = false;
+
 async function sincronizarAvisos(){
-  if (!usuario || !FB) return;
+  if (!usuario || !FB) { avisosPendiente = true; return; }
   const sub = await suscripcionActual();
-  if (sub) { try { await guardarSuscripcion(sub); } catch(_){} }
+  if (!sub) return;                       // sin avisos activados no hay nada que actualizar
+  try { await guardarSuscripcion(sub); avisosPendiente = false; }
+  catch(_){ avisosPendiente = true; }
 }
+
+addEventListener("online", () => { if (avisosPendiente) sincronizarAvisos(); });
 
 /* El explicativo no ocupa lugar hasta que alguien toca la (i): sólo estado de
    pantalla, no se guarda. */
@@ -3872,6 +3881,10 @@ function render(){
   if (vista==="avance") renderAvance();
 }
 cargar(); aplicarTema(temaActual()); render();
+
+/* Las fechas que lee el enviador se ponen al día al abrir: cubre el caso de
+   haber borrado un examen sin conexión en una sesión anterior. */
+setTimeout(()=>{ if (typeof sincronizarAvisos === "function") sincronizarAvisos(); }, 2500);
 
 /* ================= PWA: instalación desde la propia app =================
    Android y escritorio avisan con beforeinstallprompt que se puede instalar. Se
