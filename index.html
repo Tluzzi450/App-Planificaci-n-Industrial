@@ -289,10 +289,16 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 /* ---------- avisos al celular ---------- */
 /* Va en la misma fila que el selector de vistas, a la derecha: dos botones
    chicos en lugar del recuadro con párrafo que ocupaba media pantalla. */
-.av-fila{display:flex;align-items:center;gap:6px;margin-left:auto}
-.av-bell{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;
-  border-radius:9px;padding:7px 13px;font-weight:700;font-size:12.5px;transition:.15s;line-height:1}
-.av-bell .p{width:8px;height:8px;border-radius:50%;flex:none}
+/* Va pegada a la derecha de la fila del exportar. Sin texto: en el celular la
+   campana con leyenda empujaba todo a una segunda línea. El color dice el
+   estado y el detalle vive en la (i). */
+.av-fila{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
+.av-bell{display:inline-flex;align-items:center;justify-content:center;gap:0;
+  border:1px solid transparent;border-radius:9px;width:36px;height:36px;padding:0;
+  font-size:16px;transition:.15s;line-height:1;flex:none;position:relative}
+/* el punto de color va arriba a la derecha, como una insignia */
+.av-bell .p{width:9px;height:9px;border-radius:50%;flex:none;position:absolute;
+  top:4px;right:4px;border:1.5px solid var(--blanco)}
 .av-bell.on{background:#eef8dc;border-color:#cfe8a2;color:var(--verde-txt)}
 .av-bell.on .p{background:var(--verde)}
 .av-bell.off{background:#ffe8ec;border-color:#ffb9c4;color:#a00018}
@@ -301,16 +307,24 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .av-bell[disabled]{opacity:.55;cursor:default}
 html[data-tema="oscuro"] .av-bell.on{background:#1e3312;border-color:#3c5c26;color:#bde08a}
 html[data-tema="oscuro"] .av-bell.off{background:#3d1620;border-color:#6b2534;color:#ff9fae}
-.av-info{width:28px;height:28px;border-radius:50%;border:1px solid var(--borde);
-  background:var(--blanco);color:var(--gris);font-weight:800;font-size:12.5px;flex:none;line-height:1}
+.av-info{width:36px;height:36px;border-radius:50%;border:1px solid var(--borde);
+  background:var(--blanco);color:var(--gris);font-weight:800;font-size:13px;flex:none;line-height:1}
 .av-info:hover{border-color:var(--acento);color:var(--petrol)}
 .av-detalle{background:var(--blanco);border:1px solid var(--borde);border-radius:11px;
   padding:13px 16px;margin-bottom:14px;box-shadow:var(--sombra);max-width:760px}
 .av-detalle p{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 8px}
 .av-detalle p:last-child{margin:0}
+.av-punto{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;
+  vertical-align:middle}
+.av-punto.verde{background:var(--verde)}
+.av-punto.rojo{background:var(--rojo)}
 /* la fila del selector deja de tener margen propio: lo pone el contenedor */
-.ag-barra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-.ag-barra .ag-modos{margin-bottom:0}
+@media(max-width:560px){
+  /* el botón de exportar ocupa el ancho y la campana queda a su derecha */
+  .ag-export{gap:6px}
+  .ag-export .nota{order:3;flex-basis:100%}
+  #btnIcsExamenes{flex:1 1 auto;min-width:0}
+}
 /* ---------- selector de grupos con sus dos burbujas ---------- */
 .gr-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
 .gr-tab{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--borde);
@@ -693,12 +707,10 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
         <div class="ag-export">
           <button class="btn" id="btnIcsExamenes">📅 Exportar todo al calendario</button>
           <span class="nota">con avisos 5, 2 y 1 día antes</span>
-        </div>
-        <div class="ag-barra">
-          <div class="ag-modos" id="agModos"></div>
           <div class="av-fila" id="avisosPush"></div>
         </div>
         <div id="avisosDetalle"></div>
+        <div class="ag-modos" id="agModos"></div>
         <div id="proximos10"></div>
         <div id="burbujas"></div>
         <div id="examenesPasados"></div>
@@ -747,7 +759,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.26 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.27 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2598,19 +2610,29 @@ addEventListener("online", () => { if (avisosPendiente) sincronizarAvisos(); });
    pantalla, no se guarda. */
 let avisosAbierto = false;
 
+/* Como la campana ya no lleva texto, acá se explica qué significa cada color. */
 function textoAvisos(caso){
+  const leyenda = {
+    activo:     ["verde", "los avisos están activados en este dispositivo"],
+    inactivo:   ["rojo",  "los avisos están desactivados"],
+    bloqueado:  ["rojo",  "tu navegador tiene los avisos bloqueados para este sitio"],
+    sinsoporte: ["rojo",  "este navegador no permite avisos"],
+    sinsesion:  ["rojo",  "hace falta iniciar sesión para poder activarlos"],
+  }[caso];
   const p = {
-    activo: ["Recibís un aviso <b>5 días antes, 2 días antes y la víspera</b> de cada examen anotado, aunque tengas la app cerrada.",
+    activo: ["Tocá la campana para desactivarlos.",
+             "Recibís un aviso <b>5 días antes, 2 días antes y la víspera</b> de cada examen anotado, aunque tengas la app cerrada.",
              "Se actualizan solos cuando agregás o borrás un examen. Valen para este dispositivo: si querés también en otro, activalos ahí."],
-    inactivo: ["Si los activás, el planificador te avisa al celular <b>5 días antes, 2 días antes y la víspera</b> de cada examen anotado.",
-               "Los avisos llegan aunque tengas la app cerrada. Se activan por dispositivo."],
-    bloqueado: ["Los avisos están bloqueados para este sitio en tu navegador.",
-                "Para volver a activarlos entrá a los permisos del sitio —el candado al lado de la dirección— y habilitá las notificaciones."],
-    sinsoporte: ["Este navegador no permite avisos.",
-                 "En iPhone hay que instalar la app desde Safari con «Agregar a pantalla de inicio». En computadora, usar Chrome, Edge o Firefox."],
-    sinsesion: ["Iniciá sesión para que el planificador te avise unos días antes de cada examen."],
+    inactivo: ["Tocá la campana para activarlos.",
+               "El planificador te avisa al celular <b>5 días antes, 2 días antes y la víspera</b> de cada examen anotado, aunque tengas la app cerrada."],
+    bloqueado: ["Para volver a activarlos entrá a los permisos del sitio —el candado al lado de la dirección— y habilitá las notificaciones."],
+    sinsoporte: ["En iPhone hay que instalar la app desde Safari con «Agregar a pantalla de inicio». En computadora, usar Chrome, Edge o Firefox."],
+    sinsesion: ["Iniciá sesión y después tocá la campana para activarlos."],
   }[caso] || [];
-  return p.map(t => `<p>${t}</p>`).join("");
+  const cab = leyenda
+    ? `<p><span class="av-punto ${leyenda[0]}"></span><b>Campana en ${leyenda[0]}:</b> ${leyenda[1]}.</p>`
+    : "";
+  return cab + p.map(t => `<p>${t}</p>`).join("");
 }
 
 function pintarDetalleAvisos(caso){
@@ -2622,23 +2644,27 @@ function renderAvisos(){
   const c = $("#avisosPush"); if (!c) return;
 
   const botonInfo = `<button class="av-info" id="avInfo" title="Cómo funcionan los avisos">i</button>`;
-  const armar = (clase, texto, caso, apagado) => {
-    c.innerHTML = `<button class="av-bell ${clase}" id="avBell"${apagado?" disabled":""}>
-        <span class="p"></span>🔔 ${texto}</button>${botonInfo}`;
+  const armar = (clase, titulo, caso, apagado) => {
+    c.innerHTML = `<button class="av-bell ${clase}" id="avBell" title="${titulo}"${apagado?" disabled":""}
+        aria-label="${titulo}">🔔<span class="p"></span></button>${botonInfo}`;
     pintarDetalleAvisos(caso);
     $("#avInfo").onclick = () => { avisosAbierto = !avisosAbierto; pintarDetalleAvisos(caso); };
     return $("#avBell");
   };
 
-  if (!pushSoportado())            return void armar("off","Avisos","sinsoporte",true);
-  if (!syncConfigurado()||!usuario) return void armar("off","Avisos","sinsesion",true);
-  if (Notification.permission === "denied") return void armar("off","Avisos","bloqueado",true);
+  if (!pushSoportado())
+    return void armar("off","Este navegador no permite avisos","sinsoporte",true);
+  if (!syncConfigurado()||!usuario)
+    return void armar("off","Iniciá sesión para activar los avisos","sinsesion",true);
+  if (Notification.permission === "denied")
+    return void armar("off","Avisos bloqueados en tu navegador","bloqueado",true);
 
   suscripcionActual().then(sub => {
     const activo = Notification.permission === "granted" && !!sub;
-    const b = armar(activo?"on":"off", activo?"Avisos activados":"Avisos desactivados",
+    const b = armar(activo?"on":"off",
+                    activo?"Avisos activados · tocá para desactivarlos"
+                          :"Avisos desactivados · tocá para activarlos",
                     activo?"activo":"inactivo", false);
-    b.title = activo ? "Tocá para desactivar los avisos" : "Tocá para activar los avisos";
     b.onclick = activo ? desactivarAvisos : activarAvisos;
   });
 }
