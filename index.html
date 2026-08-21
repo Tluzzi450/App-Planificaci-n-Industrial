@@ -253,6 +253,17 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .sin-coms{padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--gris)}
 /* ---------- exportar a calendario ---------- */
 .btn-mini.cal{color:var(--petrol);font-weight:700}
+/* el "+" para replicar un examen propio en el calendario de un grupo */
+.btn-mini.compartir{color:var(--magenta);font-weight:800;padding-left:8px;padding-right:8px}
+.btn-mini.compartir:hover{border-color:var(--magenta);background:var(--suave)}
+.cp-grupo{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  border:1px solid var(--borde);background:var(--blanco);border-radius:10px;
+  padding:10px 12px;margin-bottom:7px;transition:.15s}
+.cp-grupo:hover{border-color:var(--acento);background:var(--hover)}
+.cp-grupo .n{font-weight:700;color:var(--petrol);font-size:14px}
+.cp-grupo .m{margin-left:auto;font-size:11.5px;color:var(--gris);font-weight:600}
+.cp-ya{opacity:.55}
+.cp-ya:hover{border-color:var(--borde);background:var(--blanco);cursor:default}
 .btn-mini.cal:hover{border-color:var(--acento);background:var(--suave)}
 .ag-export{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .ag-export .nota{font-size:11.5px;color:var(--gris);font-weight:600}
@@ -759,7 +770,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.27 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.28 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2300,6 +2311,8 @@ function burbujaHTML(e){
     <div class="acc">
       ${d>=0?`<a class="btn-mini cal" href="${urlGoogleCalendar(e)}" target="_blank" rel="noopener"
         title="Abre Google Calendar con los datos cargados">📅 Google Calendar</a>`:""}
+      ${d>=0?`<button class="btn-mini compartir" data-comp-ex="${e.id}"
+        title="Compartir este examen con un grupo">➕</button>`:""}
       <button class="btn-mini" data-edit-ex="${e.id}">editar</button>
       ${d<0?`<button class="btn-mini" data-nota-ex="${e.id}">${e.nota!=null?"cambiar nota":"poner nota"}</button>`:""}
       <button class="btn-mini" data-del-ex="${e.id}">eliminar</button>
@@ -2330,8 +2343,82 @@ function filaEventoHTML(e){
   </div>`;
 }
 
+/* ================= COMPARTIR UN EXAMEN CON UN GRUPO =================
+   Copia un examen de la agenda personal al calendario de un grupo. Es una copia,
+   no un vínculo: si después cambiás la fecha en tu agenda, el evento del grupo
+   queda como estaba. Es a propósito — el del grupo pasa a ser de todos, y que se
+   les moviera solo porque vos editaste lo tuyo sería peor. */
+const TIPO_EX_A_GRUPO = { parcial:"parcial", recuperatorio:"recuperatorio",
+  tp:"tp", final:"final", coloquio:"otro", otro:"otro" };
+
+/* Se considera ya compartido si en ese grupo hay un evento con la misma materia
+   y la misma fecha: evita duplicados si alguien toca el "+" dos veces. */
+const yaEnGrupo = (e, evs) => (evs||[]).some(x =>
+  x.fecha === e.fecha && norm(x.titulo||"") === norm(nombreMateriaEx(e)));
+
+async function compartirConGrupo(e){
+  if (!syncConfigurado() || !usuario)
+    return toast("Iniciá sesión para usar los calendarios compartidos");
+  try {
+    if (!grupos.length) await grCargarGrupos();
+  } catch(_){}
+  if (!grupos.length)
+    return toast("Todavía no estás en ningún grupo. Creá uno en «Calendario compartido»");
+
+  const mat = nombreMateriaEx(e);
+  /* Se mira qué grupos ya lo tienen para no ofrecer duplicarlo. Son pocas
+     lecturas: como mucho, un puñado de grupos. */
+  const ya = {};
+  for (const g of grupos){
+    try {
+      const s = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"eventos"));
+      ya[g.id] = yaEnGrupo(e, s.docs.map(d => d.data()));
+    } catch(_){ ya[g.id] = false; }
+  }
+
+  $("#modal").innerHTML = `
+    <button class="cerrar" onclick="cerrarModal()">✕</button>
+    <h3>Compartir con un grupo</h3>
+    <div class="sub">${escHTML(TIPOS_EX[e.tipo]||"Examen")} de ${escHTML(mat)} · ${fmtFecha(e.fecha)}</div>
+    <section><b>¿En qué calendario lo cargo?</b>
+      ${grupos.map(g => `<button class="cp-grupo ${ya[g.id]?"cp-ya":""}"
+        data-cp="${g.id}"${ya[g.id]?" disabled":""}>
+        ${grAvatarHTML(g,true)}<span class="n">${escHTML(g.nombre)}</span>
+        <span class="m">${ya[g.id]?"ya lo tiene":`${g.miembros.length} integrante${g.miembros.length>1?"s":""}`}</span>
+      </button>`).join("")}
+    </section>
+    <section style="font-size:12.5px;color:var(--muted)">
+      Se copia al calendario del grupo, donde lo van a ver todos sus integrantes.
+      Es una copia: si después cambiás la fecha acá, la del grupo no se mueve.
+    </section>
+    <div class="modal-acc"><button class="btn" onclick="cerrarModal()">Cancelar</button></div>`;
+  $("#velo").classList.add("abierto");
+
+  $$("#modal [data-cp]").forEach(b => b.onclick = async () => {
+    const g = grupos.find(x => x.id === b.dataset.cp); if (!g) return;
+    b.disabled = true; b.querySelector(".m").textContent = "guardando…";
+    try {
+      await FB.F.addDoc(FB.F.collection(FB.db,"grupos",g.id,"eventos"), {
+        titulo: mat.slice(0,120), fecha: e.fecha, hora: e.hora || "",
+        tipo: TIPO_EX_A_GRUPO[e.tipo] || "otro",
+        detalle: (e.detalle || "").slice(0,500),
+        autor: usuario.uid, autorNombre: miNombre(),
+        creado: new Date().toISOString(), actualizado: new Date().toISOString(),
+      });
+      cerrarModal();
+      toast(`Compartido con ${g.nombre}`);
+      if (vista === "compartido") grRefrescar();
+    } catch(err){
+      b.disabled = false; b.querySelector(".m").textContent = "no se pudo";
+      toast("No se pudo compartir: " + explicar(err));
+    }
+  });
+}
+
 /* Los botones de cada burbuja se enganchan igual en las dos vistas. */
 function bindAccionesEx(raiz){
+  $$(raiz+" [data-comp-ex]").forEach(b=>b.onclick=()=>
+    compartirConGrupo((ST.examenes||[]).find(x=>x.id===+b.dataset.compEx)));
   $$(raiz+" [data-edit-ex]").forEach(b=>b.onclick=()=>abrirModalExamen(+b.dataset.editEx));
   $$(raiz+" [data-del-ex]").forEach(b=>b.onclick=()=>{
     const e=ST.examenes.find(x=>x.id===+b.dataset.delEx);
