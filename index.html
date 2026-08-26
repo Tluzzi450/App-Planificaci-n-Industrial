@@ -118,12 +118,13 @@ nav{background:var(--marca)}
 #resetOrden{color:#8fb4c4;font-size:15px;padding:12px 14px;flex:none;align-self:center;
   background:none;border:none;line-height:1}
 #resetOrden:hover{color:#fff}
-/* Nada debe poder estirar la página a lo ancho: si un elemento interno es más
-   grande que la pantalla, se recorta o se desplaza dentro de su caja, no
-   arrastrando todo el documento. Sin esto, en el celular la página queda
-   corrida de costado y el encabezado aparece cortado. */
-html,body{max-width:100%;overflow-x:hidden}
-main{max-width:1280px;margin:0 auto;padding:20px 18px 60px;overflow-x:clip}
+/* Nada debe poder estirar la página a lo ancho. Ojo: NO se usa overflow-x
+   hidden en el body, porque eso además bloquea el desplazamiento lateral de
+   los contenedores internos —la grilla semanal y la lista de comisiones dejan
+   de poder deslizarse—. Alcanza con acotar el ancho: lo que no entra se
+   desplaza dentro de su propia caja, como ya hace el mapa de correlativas. */
+html,body{max-width:100%}
+main{max-width:1280px;margin:0 auto;padding:20px 18px 60px}
 h2{color:var(--petrol);font-size:20px;font-weight:800;margin:6px 0 14px}
 h3{color:var(--petrol);font-size:15px;font-weight:700}
 /* ---------- estados ---------- */
@@ -476,7 +477,8 @@ html[data-tema="oscuro"] .pin-caja{background:#2b1319}
   box-shadow:var(--sombra);min-width:0;max-width:100%}
 .panel .cab{padding:11px 14px;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .panel .cab h3{margin-right:auto}
-.lista-cursables{max-height:72vh;overflow:auto}
+.lista-cursables{max-height:72vh;overflow:auto;min-width:0;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .mat-item{border-bottom:1px solid var(--linea);padding:9px 13px}
 .mat-item>.fila{display:flex;align-items:center;gap:8px;cursor:pointer}
 .mat-item .nom{font-weight:700;font-size:13px;color:var(--petrol);margin-right:auto}
@@ -487,9 +489,11 @@ html[data-tema="oscuro"] .pin-caja{background:#2b1319}
 .com-op input{margin-top:2px}
 .com-op .det{color:var(--muted)}
 .punto{width:10px;height:10px;border-radius:3px;flex:none}
-/* min-width:0 es lo que permite que este contenedor se achique dentro de su
-   columna; sin eso, la grilla de 760px lo infla y se lleva puesta la página. */
-.grilla-scroll{overflow-x:auto;min-width:0;max-width:100%}
+/* min-width:0 permite que se achique dentro de su columna; sin eso la grilla
+   de 760px lo infla y arrastra la página. overflow-x:auto le da su propio
+   desplazamiento lateral, igual que el mapa de correlativas. */
+.grilla-scroll{overflow-x:auto;overflow-y:hidden;min-width:0;max-width:100%;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .grilla{position:relative;display:grid;min-width:760px;grid-template-columns:52px repeat(6,1fr);--minuto:0.75px}
 .g-col-cab{position:sticky;top:0;background:var(--marca);color:#fff;font-weight:700;font-size:12.5px;text-align:center;padding:7px 0;z-index:5}
 .g-hora{font-size:10.5px;color:var(--gris);text-align:right;padding-right:6px;border-top:1px dashed var(--linea);font-weight:600}
@@ -846,7 +850,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.01 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.02 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
