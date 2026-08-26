@@ -124,7 +124,7 @@ nav{background:var(--marca)}
    de poder deslizarse—. Alcanza con acotar el ancho: lo que no entra se
    desplaza dentro de su propia caja, como ya hace el mapa de correlativas. */
 html,body{max-width:100%}
-main{max-width:1280px;margin:0 auto;padding:20px 18px 60px}
+main{max-width:1280px;margin:0 auto;padding:20px 18px 60px;min-width:0}
 h2{color:var(--petrol);font-size:20px;font-weight:800;margin:6px 0 14px}
 h3{color:var(--petrol);font-size:15px;font-weight:700}
 /* ---------- estados ---------- */
@@ -188,11 +188,21 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .ext-item .nom{font-weight:700;color:var(--petrol);margin-right:auto}
 .ext-item .det{color:var(--muted);font-size:12px;width:100%}
 /* ---------- grilla ---------- */
+/* Las dos columnas deben poder encogerse: sin min-width:0 un hijo ancho las
+   infla igual, aunque la grilla use minmax(0,1fr). */
+.col-g{min-width:0;max-width:100%}
+/* Toda la cadena de contenedores desde la grilla hasta el body tiene que poder
+   encogerse: alcanza con que UNO no pueda para que la página se estire y quede
+   corrida de costado en el celular. */
+.layout-grilla,.layout-agenda{min-width:0;max-width:100%}
+main>div{min-width:0;max-width:100%}
 .layout-grilla{display:grid;grid-template-columns:315px minmax(0,1fr);gap:16px;align-items:start}
-@media(max-width:920px){.layout-grilla{grid-template-columns:1fr}}
+/* minmax(0,1fr), no 1fr: con "1fr" el mínimo de la columna es el ancho de
+   su contenido, y la grilla de 760px la estira arrastrando la página. */
+@media(max-width:920px){.layout-grilla{grid-template-columns:minmax(0,1fr)}}
 /* ---------- agenda: calendario + proximos ---------- */
 .layout-agenda{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
-@media(max-width:920px){.layout-agenda{grid-template-columns:1fr}}
+@media(max-width:920px){.layout-agenda{grid-template-columns:minmax(0,1fr)}}
 .cal-cab{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--linea)}
 .cal-cab .mes{font-weight:800;color:var(--petrol);font-size:14px;margin-right:auto;text-transform:capitalize}
 .cal-nav{border:1px solid var(--borde);background:var(--blanco);color:var(--petrol);font-weight:700;
@@ -749,7 +759,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <small id="horariosInfo" style="color:var(--gris);font-weight:600"></small>
     </div>
     <div class="layout-grilla">
-      <div>
+      <div class="col-g">
         <div class="panel">
           <div class="cab"><h3>Materias que podés cursar</h3></div>
           <div class="filtros-com" id="filtrosCom"></div>
@@ -760,7 +770,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
           <div id="listaExternas"></div>
         </div>
       </div>
-      <div>
+      <div class="col-g">
         <div class="panel">
           <div class="cab">
             <h3>Semana tipo</h3>
@@ -850,7 +860,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.02 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.03 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
