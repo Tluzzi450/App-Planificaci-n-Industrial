@@ -286,16 +286,10 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .gr-mi{font-size:11px;font-weight:700;background:var(--suave);color:var(--muted);
   border-radius:99px;padding:2px 9px;border:1px solid var(--borde)}
 .gr-mi.yo{background:var(--marca);color:#fff;border-color:var(--marca)}
-.gr-ev{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;background:var(--blanco);
-  border:1px solid var(--borde);border-left:4px solid var(--cyan);border-radius:10px;
-  padding:10px 13px;margin-bottom:7px}
-.gr-ev.urgente{border-left-color:var(--rojo)}
-.gr-ev.pronto{border-left-color:var(--ambar)}
-.gr-ev.pasado{opacity:.6}
-.gr-ev .f{font-weight:800;color:var(--petrol);font-size:12.5px;white-space:nowrap;min-width:64px;flex:none}
-.gr-ev .t{font-weight:700;font-size:14px;color:var(--petrol);min-width:0;flex:1 1 160px;overflow-wrap:anywhere}
-.gr-ev .quien{font-size:11px;font-weight:600;color:var(--gris);white-space:nowrap}
-.gr-ev .acc{display:flex;gap:5px;flex-basis:100%;margin-top:2px}
+/* Los eventos del grupo usan .burbuja, igual que la agenda. Sólo se agrega lo
+   que aquéllas no tienen: la fila de acciones y el hilo de comentarios. */
+.gr-burb .acc{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto;padding-top:2px}
+.gr-burb .meta{display:flex;align-items:center;gap:5px}
 .gr-aviso{font-size:12px;color:var(--gris);font-weight:600;margin-bottom:12px}
 /* ---------- novedades y agrupación del calendario compartido ---------- */
 .gr-nov{background:var(--blanco);border:1px solid var(--borde);border-left:4px solid var(--cyan);
@@ -823,7 +817,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.29 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.30 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -3538,7 +3532,7 @@ function grGrupoHTML(titulo, evs, g, extra){
   return `<div class="ag-grupo">
     <div class="ag-cab ${extra||""}"><span class="t">${escHTML(titulo)}</span>
       <span class="n">${evs.length} evento${evs.length>1?"s":""}</span></div>
-    ${evs.map(e=>grEventoHTML(e,g)).join("")}</div>`;
+    <div class="burbujas">${evs.map(e=>grEventoHTML(e,g)).join("")}</div></div>`;
 }
 
 function grListadoHTML(fut, pas, g){
@@ -3576,9 +3570,9 @@ function grListadoHTML(fut, pas, g){
   }
 
   return (fut.length?`<div class="sec-tit">Lo que viene <small>${fut.length} evento${fut.length>1?"s":""}</small></div>
-      ${fut.map(e=>grEventoHTML(e,g)).join("")}`:"")
+      <div class="burbujas">${fut.map(e=>grEventoHTML(e,g)).join("")}</div>`:"")
     + (pas.length?`<div class="sec-tit">Ya pasaron <small>${pas.length} evento${pas.length>1?"s":""}</small></div>
-      ${pas.map(e=>grEventoHTML(e,g)).join("")}`:"");
+      <div class="burbujas">${pas.map(e=>grEventoHTML(e,g)).join("")}</div>`:"");
 }
 
 /* Novedades: no hacen falta avisos push ni un registro aparte. Cada evento ya
@@ -3633,12 +3627,19 @@ function grEventoHTML(e, g){
   const d = diasHasta(e.fecha), c = textoCuenta(d);
   const cls = d<0 ? "pasado" : d<=2 ? "urgente" : d<=7 ? "pronto" : "";
   const puedo = e.autor === usuario.uid || g.creador === usuario.uid;
-  return `<div class="gr-ev ${cls}">
-    <span class="f">${fmtFecha(e.fecha)}${e.hora?" · "+e.hora:""}</span>
-    <span class="t">${escHTML(e.titulo)}</span>
-    <span class="chip ${d<0?"chip-bloq":"chip-rendible"}">${GR_TIPOS[e.tipo]||"Otro"}</span>
-    <span class="quien">${d>=0?c.n+" "+c.s+" · ":""}lo cargó ${escHTML(e.autorNombre||"alguien")}</span>
-    ${e.detalle?`<div style="flex-basis:100%;font-size:12.5px;color:var(--muted)">${escHTML(e.detalle)}</div>`:""}
+  /* Misma estructura que las burbujas de la agenda personal, para que las dos
+     pestañas se lean igual. Lo propio del grupo —quién lo cargó y los
+     comentarios— se suma abajo, sin cambiar el formato. */
+  return `<div class="burbuja gr-burb ${d<0?"pasada":cls}">
+    <div class="cab-b">
+      <span class="mat">${escHTML(e.titulo)}</span>
+      <span class="cuenta">${c.n}${c.s?`<small>${c.s}</small>`:""}</span>
+    </div>
+    <div>
+      <span class="chip ${d<0?"chip-bloq":"chip-rendible"}">${GR_TIPOS[e.tipo]||"Otro"}${e.detalle?" · "+escHTML(e.detalle):""}</span>
+    </div>
+    <div class="meta">📅 ${fmtFecha(e.fecha)}${e.hora?` · ${e.hora} hs`:""}</div>
+    <div class="meta">👤 lo cargó ${escHTML(e.autorNombre||"alguien")}</div>
     <div class="acc">
       <button class="gr-vercom" data-gr-com="${e.id}">${
         grEvAbierto===e.id ? "ocultar comentarios"
