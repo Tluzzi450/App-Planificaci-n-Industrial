@@ -487,8 +487,10 @@ html[data-tema="oscuro"] .pin-caja{background:#2b1319}
   box-shadow:var(--sombra);min-width:0;max-width:100%}
 .panel .cab{padding:11px 14px;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .panel .cab h3{margin-right:auto}
-.lista-cursables{max-height:72vh;overflow:auto;min-width:0;
-  -webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+/* Sin desplazamiento propio: sus filas envuelven solas. Antes tenía
+   overscroll-behavior:contain y atrapaba el gesto vertical, así que en el
+   celular no se podía bajar por la pestaña. */
+.lista-cursables{max-height:72vh;overflow-y:auto;overflow-x:hidden;min-width:0}
 .mat-item{border-bottom:1px solid var(--linea);padding:9px 13px}
 .mat-item>.fila{display:flex;align-items:center;gap:8px;cursor:pointer}
 .mat-item .nom{font-weight:700;font-size:13px;color:var(--petrol);margin-right:auto}
@@ -499,11 +501,13 @@ html[data-tema="oscuro"] .pin-caja{background:#2b1319}
 .com-op input{margin-top:2px}
 .com-op .det{color:var(--muted)}
 .punto{width:10px;height:10px;border-radius:3px;flex:none}
-/* min-width:0 permite que se achique dentro de su columna; sin eso la grilla
-   de 760px lo infla y arrastra la página. overflow-x:auto le da su propio
-   desplazamiento lateral, igual que el mapa de correlativas. */
+/* El ÚNICO elemento con desplazamiento lateral propio de esta pestaña.
+   overscroll-behavior-x (sólo el eje x) evita arrastrar la página al llegar al
+   borde, sin tocar el gesto vertical: bajar por la pestaña sigue funcionando.
+   touch-action:pan-x pan-y deja pasar los dos gestos al navegador. */
 .grilla-scroll{overflow-x:auto;overflow-y:hidden;min-width:0;max-width:100%;
-  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  touch-action:pan-x pan-y}
 .grilla{position:relative;display:grid;min-width:760px;grid-template-columns:52px repeat(6,1fr);--minuto:0.75px}
 .g-col-cab{position:sticky;top:0;background:var(--marca);color:#fff;font-weight:700;font-size:12.5px;text-align:center;padding:7px 0;z-index:5}
 .g-hora{font-size:10.5px;color:var(--gris);text-align:right;padding-right:6px;border-top:1px dashed var(--linea);font-weight:600}
@@ -636,11 +640,12 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
 /* Armar horario: la grilla semanal no entra en un teléfono y quedaba cortada.
    Se le permite desplazarse de costado con un ancho mínimo utilizable. */
 @media(max-width:720px){
-  .grilla-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .grilla-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
   .grilla{min-width:560px}
   .panel .cab{flex-wrap:wrap;gap:7px}
   .panel .cab h3{flex:1 1 100%}
-  .lista-cursables{max-height:none}
+  /* sin tope de alto, el scroll interno sobra: la página entera se desplaza */
+  .lista-cursables{max-height:none;overflow:visible}
   .filtros-com{gap:10px}
   .filtros-com .cuenta{flex-basis:100%;margin-left:0}
   .filtros{flex-wrap:wrap;gap:7px}
@@ -860,7 +865,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.03 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.04 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
