@@ -520,6 +520,18 @@ html[data-tema="oscuro"] .pin-caja{background:#2b1319}
 .ok-choques{background:#eef8dc;border:1px solid #cfe8a2;color:var(--verde-txt);font-size:13px;border-radius:8px;padding:8px 12px;font-weight:700}
 /* ---------- simulador ---------- */
 .sim-anios{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;align-items:start}
+/* ---------- opciones del simulador ---------- */
+.sim-ops{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.sim-ops label{display:inline-flex;gap:7px;align-items:center;font-weight:600;font-size:13.5px}
+.sim-corr{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--borde);
+  background:var(--blanco);color:var(--muted);border-radius:9px;padding:7px 13px;
+  font-weight:700;font-size:12.5px;transition:.15s}
+.sim-corr:hover{border-color:var(--acento)}
+.sim-corr .p{width:8px;height:8px;border-radius:50%;background:var(--gris);flex:none}
+.sim-corr.libre{background:#fff4dc;border-color:var(--ambar);color:#9a6a00}
+.sim-corr.libre .p{background:var(--ambar)}
+html[data-tema="oscuro"] .sim-corr.libre{background:#3a2c08;border-color:#7a5c12;color:#f0c76a}
+.sim-nota{font-size:12px;color:var(--gris);font-weight:600}
 .sim-anio .cab b{font-size:16px;color:var(--petrol)}
 .sim-lista{padding:8px 12px;max-height:430px;overflow:auto}
 .sim-op{display:flex;gap:8px;align-items:flex-start;padding:5px 4px;font-size:13px;border-radius:6px}
@@ -836,9 +848,11 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <h2>Simulador de carrera</h2>
     <p style="margin-bottom:12px;color:var(--muted);max-width:820px">Asigná materias pendientes a los próximos años. El simulador valida las correlatividades en cadena
       (asume que aprobás todo lo que asignás a años anteriores) y estima tu año de egreso. No valida horarios futuros, porque todavía no existen.</p>
-    <label style="display:inline-flex;gap:7px;align-items:center;margin-bottom:14px;font-weight:600;font-size:13.5px">
-      <input type="checkbox" id="chkAsumir" checked> Asumir que apruebo las materias que estoy cursando en 2026
-    </label>
+    <div class="sim-ops">
+      <label><input type="checkbox" id="chkAsumir" checked> Asumir que apruebo las materias que estoy cursando en 2026</label>
+      <button class="sim-corr" id="btnCorrel"><span class="p"></span></button>
+      <span class="sim-nota" id="notaCorrel"></span>
+    </div>
     <div class="sim-anios" id="simAnios"></div>
     <div style="margin-top:12px"><button class="btn primario" id="btnAgregarAnio">+ Agregar año</button></div>
     <div class="sim-res" id="simRes"></div>
@@ -865,7 +879,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.04 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.05 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -1912,8 +1926,26 @@ function validarSim(){
   }
   return {resultado, apr};
 }
+/* Con las correlativas ignoradas, el simulador deja de marcar en rojo y de
+   avisar. Sirve para planificar casos que académicamente se pueden dar —una
+   equivalencia, una excepción de la Facultad— sin que la app insista con un
+   error que en ese caso no aplica. No cambia qué materias se pueden asignar:
+   sólo deja de validar el orden. */
+const sinCorrelativas = () => ST.sim.sinCorrel === true;
+
 function renderSim(){
   $("#chkAsumir").checked=ST.sim.asumir!==false;
+  const libre = sinCorrelativas();
+  const bc = $("#btnCorrel");
+  if (bc){
+    bc.className = "sim-corr" + (libre ? " libre" : "");
+    bc.innerHTML = `<span class="p"></span>${libre ? "Correlativas ignoradas" : "Validando correlativas"}`;
+    bc.title = libre ? "Tocá para volver a validarlas" : "Tocá para dejar de tenerlas en cuenta";
+  }
+  const nc = $("#notaCorrel");
+  if (nc) nc.textContent = libre
+    ? "El simulador no revisa el orden de cursada."
+    : "";
   const cont=$("#simAnios"); cont.innerHTML="";
   if(!Array.isArray(ST.sim.anios)) ST.sim.anios=[];
   if(!ST.sim.anios.length) ST.sim.anios=[{mats:[]}];
@@ -1934,7 +1966,8 @@ function renderSim(){
     const lista=el.querySelector(".sim-lista");
     for (const m of pendientes){
       const sel=anio.mats.includes(m.o);
-      const errores=sel?resultado[ix][m.o]:null;
+      // con las correlativas ignoradas no se marca ningún error
+      const errores=(sel && !libre)?resultado[ix][m.o]:null;
       const op=document.createElement("label");
       op.className="sim-op"+(errores?" invalida":"");
       op.innerHTML=`<input type="checkbox" ${sel?"checked":""}>
@@ -1950,7 +1983,7 @@ function renderSim(){
     cont.appendChild(el);
   });
   // resumen
-  const errsTot=resultado.reduce((t,e)=>t+Object.keys(e).length,0);
+  const errsTot=libre?0:resultado.reduce((t,e)=>t+Object.keys(e).length,0);
   const oblig=MATERIAS.filter(m=>!m.electiva);
   const aprFinal=oblig.filter(m=>apr.has(m.o)).length;
   const hsElec=MATERIAS.filter(m=>m.electiva&&apr.has(m.o)).reduce((t,m)=>t+hsElectiva(m),0);
@@ -1961,12 +1994,19 @@ function renderSim(){
     const ultimo=anioBase()+ST.sim.anios.length;
     const cierre=INTEGRADORA&&porOrden[INTEGRADORA] ? porOrden[INTEGRADORA].nombre.replace(/\s*\(Int\.?\)\s*/i,"") : null;
     msg=`<b style="color:var(--verde-txt)">🎓 Con este plan terminás de cursar y aprobar todo en ${ultimo}.</b>`
+      + (libre?`<br><small style="color:#9a6a00">Sin validar correlativas: confirmá en Autogestión que podés cursarlas en ese orden.</small>`:"")
       + (cierre?`<br><small>Restan ${cierre} rendida (exige todo aprobado) y la Práctica Profesional Supervisada para el título.</small>`:"");
   } else msg=`Con lo asignado te quedarían <b>${faltanMat} obligatorias</b>${faltanElec?` y <b>${faltanElec} hs de electivas</b>`:""} sin aprobar. Agregá años o materias.`;
   $("#simRes").innerHTML=msg;
 }
 $("#btnAgregarAnio").onclick=()=>{ ST.sim.anios.push({mats:[]}); guardar(); renderSim(); };
 $("#chkAsumir").onchange=e=>{ ST.sim.asumir=e.target.checked; guardar(); renderSim(); };
+$("#btnCorrel").onclick=()=>{
+  ST.sim.sinCorrel = !sinCorrelativas(); guardar(); renderSim();
+  toast(sinCorrelativas()
+    ? "El simulador deja de validar correlativas"
+    : "El simulador vuelve a validar correlativas");
+};
 
 /* ================= AVANCE ================= */
 function renderAvance(){
@@ -3048,7 +3088,7 @@ function sanearEstado(d){
       for (const [o,n] of Object.entries(d.aplazos||{})) if (porOrden[+o] && Number.isInteger(n) && n>=1 && n<=20) aplazos[+o]=n;
       const grilla={};
       for (const [o,k] of Object.entries(d.grilla||{})) if (porOrden[+o] && typeof k==="string") grilla[+o]=k;
-      const sim={ asumir: d.sim?.asumir!==false,
+      const sim={ asumir: d.sim?.asumir!==false, sinCorrel: d.sim?.sinCorrel===true,
         anios: Array.isArray(d.sim?.anios) ? d.sim.anios.map(a=>({mats:(Array.isArray(a?.mats)?a.mats:[]).filter(o=>porOrden[o])})) : [] };
       /* Un archivo importado puede venir de otra persona: además de validar la forma,
          se recorta cada texto. Sumado al escapado de salida, un JSON con código
