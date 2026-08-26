@@ -11,7 +11,7 @@
  *
  * Al publicar una versión nueva: cambiá VERSION. Eso descarta la caché vieja.
  */
-const VERSION = "2026.08.30";
+const VERSION = "2026.08.31";
 const CACHE = "planificador-industrial-" + VERSION;
 
 const ESENCIALES = [
