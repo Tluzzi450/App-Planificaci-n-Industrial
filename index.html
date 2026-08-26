@@ -118,7 +118,12 @@ nav{background:var(--marca)}
 #resetOrden{color:#8fb4c4;font-size:15px;padding:12px 14px;flex:none;align-self:center;
   background:none;border:none;line-height:1}
 #resetOrden:hover{color:#fff}
-main{max-width:1280px;margin:0 auto;padding:20px 18px 60px}
+/* Nada debe poder estirar la página a lo ancho: si un elemento interno es más
+   grande que la pantalla, se recorta o se desplaza dentro de su caja, no
+   arrastrando todo el documento. Sin esto, en el celular la página queda
+   corrida de costado y el encabezado aparece cortado. */
+html,body{max-width:100%;overflow-x:hidden}
+main{max-width:1280px;margin:0 auto;padding:20px 18px 60px;overflow-x:clip}
 h2{color:var(--petrol);font-size:20px;font-weight:800;margin:6px 0 14px}
 h3{color:var(--petrol);font-size:15px;font-weight:700}
 /* ---------- estados ---------- */
@@ -135,7 +140,7 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .chip-compartida{background:#fff4dc;color:#9a6a00}
 /* ---------- materias ---------- */
 .filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
-.filtros input[type=search]{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--borde);border-radius:8px;font-family:inherit;font-size:14px}
+.filtros input[type=search]{flex:1 1 200px;min-width:0;padding:8px 12px;border:1px solid var(--borde);border-radius:8px;font-family:inherit;font-size:14px}
 .seg{display:flex;border:1px solid var(--borde);border-radius:8px;overflow:hidden;background:var(--blanco)}
 .seg button{border:none;background:none;padding:8px 13px;font-size:13px;font-weight:600;color:var(--gris)}
 .seg button.activa{background:var(--marca);color:#fff}
@@ -182,10 +187,10 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .ext-item .nom{font-weight:700;color:var(--petrol);margin-right:auto}
 .ext-item .det{color:var(--muted);font-size:12px;width:100%}
 /* ---------- grilla ---------- */
-.layout-grilla{display:grid;grid-template-columns:315px 1fr;gap:16px;align-items:start}
+.layout-grilla{display:grid;grid-template-columns:315px minmax(0,1fr);gap:16px;align-items:start}
 @media(max-width:920px){.layout-grilla{grid-template-columns:1fr}}
 /* ---------- agenda: calendario + proximos ---------- */
-.layout-agenda{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.layout-agenda{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
 @media(max-width:920px){.layout-agenda{grid-template-columns:1fr}}
 .cal-cab{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--linea)}
 .cal-cab .mes{font-weight:800;color:var(--petrol);font-size:14px;margin-right:auto;text-transform:capitalize}
@@ -467,7 +472,8 @@ html[data-tema="oscuro"] .pin-caja{background:#2b1319}
 .cal-ley span{display:inline-flex;align-items:center;gap:4px}
 .ev-fila.acad{border-left:4px solid var(--magenta)}
 .ev-fila.feriado{border-left:4px solid var(--verde)}
-.panel{background:var(--blanco);border:1px solid var(--borde);border-radius:10px;box-shadow:var(--sombra)}
+.panel{background:var(--blanco);border:1px solid var(--borde);border-radius:10px;
+  box-shadow:var(--sombra);min-width:0;max-width:100%}
 .panel .cab{padding:11px 14px;border-bottom:1px solid var(--borde);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .panel .cab h3{margin-right:auto}
 .lista-cursables{max-height:72vh;overflow:auto}
@@ -481,7 +487,9 @@ html[data-tema="oscuro"] .pin-caja{background:#2b1319}
 .com-op input{margin-top:2px}
 .com-op .det{color:var(--muted)}
 .punto{width:10px;height:10px;border-radius:3px;flex:none}
-.grilla-scroll{overflow-x:auto}
+/* min-width:0 es lo que permite que este contenedor se achique dentro de su
+   columna; sin eso, la grilla de 760px lo infla y se lleva puesta la página. */
+.grilla-scroll{overflow-x:auto;min-width:0;max-width:100%}
 .grilla{position:relative;display:grid;min-width:760px;grid-template-columns:52px repeat(6,1fr);--minuto:0.75px}
 .g-col-cab{position:sticky;top:0;background:var(--marca);color:#fff;font-weight:700;font-size:12.5px;text-align:center;padding:7px 0;z-index:5}
 .g-hora{font-size:10.5px;color:var(--gris);text-align:right;padding-right:6px;border-top:1px dashed var(--linea);font-weight:600}
@@ -621,6 +629,7 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
   .lista-cursables{max-height:none}
   .filtros-com{gap:10px}
   .filtros-com .cuenta{flex-basis:100%;margin-left:0}
+  .filtros{flex-wrap:wrap;gap:7px}
 }
 @media(max-width:420px){
   /* Por debajo de este ancho, exigir 255px por tarjeta hace que la grilla
@@ -837,7 +846,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.31 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.01 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
