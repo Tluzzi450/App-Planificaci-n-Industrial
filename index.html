@@ -297,6 +297,27 @@ h3{color:var(--petrol);font-size:15px;font-weight:700}
 .gr-ev .quien{font-size:11px;font-weight:600;color:var(--gris);white-space:nowrap}
 .gr-ev .acc{display:flex;gap:5px;flex-basis:100%;margin-top:2px}
 .gr-aviso{font-size:12px;color:var(--gris);font-weight:600;margin-bottom:12px}
+/* ---------- novedades y agrupación del calendario compartido ---------- */
+.gr-nov{background:var(--blanco);border:1px solid var(--borde);border-left:4px solid var(--cyan);
+  border-radius:11px;padding:11px 14px;margin-bottom:14px;box-shadow:var(--sombra)}
+.gr-nov .cab{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--petrol);
+  font-size:13px;margin-bottom:8px}
+.gr-nov .cab .n{background:var(--cyan);color:#04323c;border-radius:99px;
+  font-size:11px;padding:1px 7px;font-weight:800}
+.gr-nov .cab button{margin-left:auto;border:1px solid var(--borde);background:var(--blanco);
+  color:var(--petrol);border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700}
+.gr-nov .it{display:flex;align-items:baseline;gap:8px;padding:5px 0;
+  border-top:1px solid var(--linea);font-size:12.5px;flex-wrap:wrap}
+.gr-nov .it:first-of-type{border-top:none}
+.gr-nov .it .q{color:var(--petrol);font-weight:700;min-width:0;flex:1 1 auto;overflow-wrap:anywhere}
+.gr-nov .it .c{font-size:11px;color:var(--gris);font-weight:600;white-space:nowrap}
+.gr-nov .it .v{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px}
+.gr-nov .it .v.alta{background:#eef8dc;color:var(--verde-txt)}
+.gr-nov .it .v.cambio{background:#fff4dc;color:#9a6a00}
+.gr-nov .it .v.baja{background:#ffe8ec;color:#a00018}
+html[data-tema="oscuro"] .gr-nov .it .v.alta{background:#1e3312;color:#bde08a}
+html[data-tema="oscuro"] .gr-nov .it .v.cambio{background:#3a2c08;color:#f0c76a}
+html[data-tema="oscuro"] .gr-nov .it .v.baja{background:#3d1620;color:#ff9fae}
 /* ---------- avisos al celular ---------- */
 /* Va en la misma fila que el selector de vistas, a la derecha: dos botones
    chicos en lugar del recuadro con párrafo que ocupaba media pantalla. */
@@ -565,6 +586,38 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
   .login-der{flex:1}
   .login-card{padding:30px 24px}
 }
+/* ---------- ajustes para el celular ----------
+   El encabezado se apretaba: el logo, el título y los cinco botones no entran
+   en un ancho de teléfono y se cortaban. Acá el título pasa a ocupar su renglón
+   y los botones se acomodan debajo, sin desbordar. */
+@media(max-width:720px){
+  .head-int{padding:9px 12px;gap:9px}
+  .logo-marca svg{height:27px}
+  .head-tit{flex:1 1 auto;min-width:0}
+  .head-tit h1{font-size:15px}
+  .head-tit small{display:block;font-size:11px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .head-acc{flex-basis:100%;gap:6px;justify-content:flex-start;overflow-x:auto;
+    padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .head-acc::-webkit-scrollbar{display:none}
+  .head-acc .btn{flex:none;font-size:12px;padding:6px 10px}
+  /* la barra de solapas ya se desplaza de costado: se le quita el recorte
+     visual y se le da una pista de que hay más a la derecha */
+  .nav-int{padding:0 4px;scrollbar-width:none}
+  .nav-int::-webkit-scrollbar{display:none}
+  .nav-int button{padding:11px 13px;font-size:13px}
+}
+/* Armar horario: la grilla semanal no entra en un teléfono y quedaba cortada.
+   Se le permite desplazarse de costado con un ancho mínimo utilizable. */
+@media(max-width:720px){
+  .grilla-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .grilla{min-width:560px}
+  .panel .cab{flex-wrap:wrap;gap:7px}
+  .panel .cab h3{flex:1 1 100%}
+  .lista-cursables{max-height:none}
+  .filtros-com{gap:10px}
+  .filtros-com .cuenta{flex-basis:100%;margin-left:0}
+}
 /* ---------- agenda de exámenes ---------- */
 .badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;
   border-radius:99px;background:var(--ambar);color:#4a3300;font-size:11px;font-weight:800}
@@ -770,7 +823,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.08.28 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.08.29 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2989,7 +3042,13 @@ function sanearEstado(d){
   const pinPlegado = d.pinPlegado === true;
   const pinFirma = limpiar(d.pinFirma, 400);
   const grupoActivo = limpiar(d.grupoActivo, 60) || null;
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, pinPlegado, pinFirma, grupoActivo,
+  const modoGrupo = ["fecha","mes","materia"].includes(d.modoGrupo) ? d.modoGrupo : "fecha";
+  /* Última vez que se miró cada grupo: contra esto se calculan las novedades. */
+  const grVistos = {};
+  if (d.grVistos && typeof d.grVistos === "object")
+    for (const [k,val] of Object.entries(d.grVistos))
+      if (typeof val === "string") grVistos[limpiar(k,60)] = limpiar(val,40);
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, pinPlegado, pinFirma, grupoActivo, modoGrupo, grVistos,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -3470,6 +3529,106 @@ async function grBorrarComentario(eid, cid){
     await grCargarComentarios(eid); renderCompartido();
   } catch(e){ toast("No se pudo eliminar: " + explicar(e)); }
 }
+/* ================= AGRUPAR Y NOVEDADES =================
+   Los mismos tres modos que la agenda personal, para no aprender dos cosas. */
+const MODOS_GRUPO = { fecha:"Por fecha", mes:"Por mes", materia:"Por materia" };
+const modoGrupo = () => MODOS_GRUPO[ST.modoGrupo] ? ST.modoGrupo : "fecha";
+
+function grGrupoHTML(titulo, evs, g, extra){
+  return `<div class="ag-grupo">
+    <div class="ag-cab ${extra||""}"><span class="t">${escHTML(titulo)}</span>
+      <span class="n">${evs.length} evento${evs.length>1?"s":""}</span></div>
+    ${evs.map(e=>grEventoHTML(e,g)).join("")}</div>`;
+}
+
+function grListadoHTML(fut, pas, g){
+  const modo = modoGrupo();
+  const todos = [...fut, ...pas.slice().reverse()];
+  if (!todos.length)
+    return `<div class="vacio">Todavía no hay eventos cargados en este grupo.</div>`;
+
+  if (modo === "mes"){
+    const porMes = {};
+    for (const e of todos) (porMes[e.fecha.slice(0,7)] = porMes[e.fecha.slice(0,7)] || []).push(e);
+    const hoyK = new Date().toISOString().slice(0,7);
+    const claves = Object.keys(porMes).sort();
+    const tit = k => {
+      const t = new Date(k+"-01T00:00").toLocaleDateString("es-AR",{month:"long",year:"numeric"});
+      return k === hoyK ? t + " · este mes" : t;
+    };
+    return claves.filter(k=>k>=hoyK).map(k=>grGrupoHTML(tit(k),porMes[k],g)).join("")
+         + claves.filter(k=>k<hoyK).reverse().map(k=>grGrupoHTML(tit(k),porMes[k],g,"pasado")).join("");
+  }
+
+  if (modo === "materia"){
+    const porMat = {};
+    for (const e of todos) (porMat[e.titulo] = porMat[e.titulo] || []).push(e);
+    const conProx = [], sinProx = [];
+    for (const [k, lista] of Object.entries(porMat)){
+      const f = lista.filter(e => diasHasta(e.fecha) >= 0);
+      const ord = [...f, ...lista.filter(e => diasHasta(e.fecha) < 0).reverse()];
+      (f.length ? conProx : sinProx).push({ k, ord, prox: f.length ? diasHasta(f[0].fecha) : Infinity });
+    }
+    conProx.sort((a,b) => a.prox - b.prox);
+    sinProx.sort((a,b) => a.k.localeCompare(b.k,"es"));
+    return conProx.map(x=>grGrupoHTML(x.k,x.ord,g)).join("")
+         + sinProx.map(x=>grGrupoHTML(x.k,x.ord,g,"pasado")).join("");
+  }
+
+  return (fut.length?`<div class="sec-tit">Lo que viene <small>${fut.length} evento${fut.length>1?"s":""}</small></div>
+      ${fut.map(e=>grEventoHTML(e,g)).join("")}`:"")
+    + (pas.length?`<div class="sec-tit">Ya pasaron <small>${pas.length} evento${pas.length>1?"s":""}</small></div>
+      ${pas.map(e=>grEventoHTML(e,g)).join("")}`:"");
+}
+
+/* Novedades: no hacen falta avisos push ni un registro aparte. Cada evento ya
+   guarda quién lo tocó y cuándo, así que alcanza con comparar contra la última
+   vez que miraste este grupo. */
+function novedadesSinVer(g){
+  const visto = (ST.grVistos||{})[g.id] || "";
+  if (!visto) return [];            // primera visita: no tiene sentido "todo es nuevo"
+  return grEventos
+    .filter(e => e.autor !== usuario.uid && String(e.actualizado||e.creado||"") > visto)
+    .map(e => ({ ...e, esAlta: !e.actualizado || e.actualizado === e.creado }))
+    .sort((a,b) => String(b.actualizado||b.creado).localeCompare(String(a.actualizado||a.creado)));
+}
+
+function novedadesHTML(nov){
+  if (!nov.length) return "";
+  const it = e => `<div class="it">
+    <span class="v ${e.esAlta?"alta":"cambio"}">${e.esAlta?"agregó":"modificó"}</span>
+    <span class="q">${escHTML(e.autorNombre||"alguien")}: ${escHTML(e.titulo)} · ${fmtFecha(e.fecha)}</span>
+    <span class="c">${cuandoTxt(e.actualizado||e.creado)}</span></div>`;
+  return `<div class="gr-nov">
+    <div class="cab">🆕 Novedades <span class="n">${nov.length}</span>
+      <button id="grNovVisto">Marcar como vistas</button></div>
+    ${nov.slice(0,8).map(it).join("")}
+    ${nov.length>8?`<div class="it"><span class="c">y ${nov.length-8} más</span></div>`:""}
+  </div>`;
+}
+
+/* Vaciar el calendario: lo puede hacer cualquier integrante, así que se pide
+   escribir la palabra para que no pase de un toque distraído. Queda registrado
+   quién lo hizo, porque borra el trabajo de todos. */
+async function vaciarCalendario(g){
+  if (!grEventos.length) return toast("El calendario del grupo ya está vacío");
+  const r = prompt(
+    `Vas a borrar los ${grEventos.length} eventos de "${g.nombre}" para todos sus integrantes.\n` +
+    `Esto no se puede deshacer.\n\nEscribí BORRAR para confirmar:`);
+  if ((r||"").trim().toUpperCase() !== "BORRAR") return toast("No se borró nada");
+  try {
+    const snap = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"eventos"));
+    for (const d of snap.docs) await FB.F.deleteDoc(FB.F.doc(FB.db,"grupos",g.id,"eventos",d.id));
+    // queda anotado en el grupo, para que el resto sepa qué pasó
+    await FB.F.updateDoc(FB.F.doc(FB.db,"grupos",g.id), {
+      actualizado: new Date().toISOString(),
+      vaciado: `${miNombre()} · ${new Date().toLocaleDateString("es-AR")}`,
+    }).catch(()=>{});
+    await grRefrescar();
+    toast("Calendario vaciado");
+  } catch(e){ toast("No se pudo vaciar: " + explicar(e)); }
+}
+
 function grEventoHTML(e, g){
   const d = diasHasta(e.fecha), c = textoCuenta(d);
   const cls = d<0 ? "pasado" : d<=2 ? "urgente" : d<=7 ? "pronto" : "";
@@ -3526,6 +3685,7 @@ function renderCompartido(){
 
   const fut = grEventos.filter(e => diasHasta(e.fecha) >= 0);
   const pas = grEventos.filter(e => diasHasta(e.fecha) < 0).reverse();
+  const nov = novedadesSinVer(g);
   const nombres = (g.miembros||[]).map(u =>
     `<span class="gr-mi ${u===usuario.uid?"yo":""}">${escHTML(u===usuario.uid?"vos":((g.nombres||{})[u]||"alguien"))}</span>`).join("");
 
@@ -3541,7 +3701,8 @@ function renderCompartido(){
         ${grupos.length>1?`<select class="gr-sel" id="grSel">${grupos.map(x=>
           `<option value="${x.id}"${x.id===g.id?" selected":""}>${escHTML(x.nombre)}</option>`).join("")}</select>`:""}
         <button class="cod" id="grCod" title="Tocá para copiar el código de invitación">${escHTML(g.codigo)}</button>
-        <button class="btn" id="grRefresh">${grCargando?"…":"↻"}</button>
+        <button class="btn" id="grRefresh" title="Buscar cambios">${grCargando?"…":"↻"}</button>
+      <button class="btn peligro" id="grVaciar" title="Borrar todos los eventos del grupo">🗑</button>
         <button class="btn" id="grSalir">Salir</button>
       </div>
     </div>
@@ -3553,15 +3714,26 @@ function renderCompartido(){
     ${grError?`<div class="aviso">${escHTML(grError)}</div>`:""}
     <div class="gr-aviso">${g.miembros.length} de ${GR_MAX} integrantes · se actualiza al abrir la pestaña o con ↻</div>
     ${grAlertaHTML(fut)}
-    ${fut.length?`<div class="sec-tit">Lo que viene <small>${fut.length} evento${fut.length>1?"s":""}</small></div>
-      ${fut.map(e=>grEventoHTML(e,g)).join("")}`
-     :`<div class="vacio">Todavía no hay eventos cargados en este grupo.</div>`}
-    ${pas.length?`<div class="sec-tit">Ya pasaron <small>${pas.length} evento${pas.length>1?"s":""}</small></div>
-      ${pas.map(e=>grEventoHTML(e,g)).join("")}`:""}`;
+    ${novedadesHTML(nov)}
+    <div class="ag-modos" id="grModos"></div>
+    ${grListadoHTML(fut, pas, g)}`;
 
+  const modosCont = $("#grModos");
+  if (modosCont) modosCont.innerHTML = Object.entries(MODOS_GRUPO).map(([k,t])=>
+    `<button data-modo="${k}" class="${k===modoGrupo()?"activo":""}">${t}</button>`).join("");
   $$("#grCont [data-gr-ir]").forEach(b => b.onclick = async () => {
     ST.grupoActivo = b.dataset.grIr; guardar(); await grRefrescar();
   });
+  $$("#grModos button").forEach(b => b.onclick = () => {
+    ST.modoGrupo = b.dataset.modo; guardar(); renderCompartido();
+  });
+  const vistoBtn = $("#grNovVisto");
+  if (vistoBtn) vistoBtn.onclick = () => {
+    ST.grVistos = { ...(ST.grVistos||{}), [g.id]: new Date().toISOString() };
+    guardar(); renderCompartido();
+  };
+  const vaciar = $("#grVaciar");
+  if (vaciar) vaciar.onclick = () => vaciarCalendario(g);
   $("#grNuevo").onclick   = () => grModalEvento(null);
   $("#grCrear2").onclick  = grCrear;
   $("#grUnirse2").onclick = grUnirse;
