@@ -31,16 +31,47 @@ function diasHasta(fecha){
 }
 const textoDias = d => d === 1 ? "Mañana" : `En ${d} días`;
 
+const fechaLarga = f => new Date(f + "T00:00:00Z")
+  .toLocaleDateString("es-AR", { weekday:"long", day:"numeric", month:"long", timeZone:"UTC" });
+
 /* Un aviso por examen y por hito, para que el navegador no apile repetidos si
    la tarea llega a correr dos veces el mismo día. */
 function armarAviso(ex, dias){
   return {
     titulo: `${textoDias(dias)}: ${ex.tipo}`,
-    cuerpo: `${ex.materia} — ${new Date(ex.fecha + "T00:00:00Z")
-      .toLocaleDateString("es-AR", { weekday:"long", day:"numeric", month:"long", timeZone:"UTC" })}`,
+    cuerpo: `${ex.materia} — ${fechaLarga(ex.fecha)}`,
     url: "./?v=agenda",
     tag: `ex-${ex.id}-${dias}`,
   };
+}
+
+/* Los del calendario compartido se distinguen a simple vista: dicen de qué
+   grupo son y quién los cargó, y abren esa pestaña en vez de la agenda. */
+function armarAvisoGrupo(ev, dias, grupo){
+  return {
+    titulo: `${textoDias(dias)}: ${ev.titulo}`,
+    cuerpo: `${grupo} · ${fechaLarga(ev.fecha)}${ev.autorNombre ? " — lo cargó " + ev.autorNombre : ""}`,
+    url: "./?v=compartido",
+    tag: `gr-${ev.id}-${dias}`,
+  };
+}
+
+/* Eventos de un grupo que caen en alguno de los hitos. Se leen una sola vez por
+   grupo aunque lo compartan varias personas: son las lecturas más caras del
+   proceso y no tiene sentido repetirlas. */
+async function eventosDeGrupo(db, gid, cache){
+  if (cache.has(gid)) return cache.get(gid);
+  let datos = { nombre: "", eventos: [] };
+  try {
+    const g = await db.collection("grupos").doc(gid).get();
+    if (g.exists){
+      datos.nombre = g.data().nombre || "un grupo";
+      const evs = await db.collection("grupos").doc(gid).collection("eventos").get();
+      datos.eventos = evs.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+  } catch(e){ console.error(`  no se pudo leer el grupo ${gid.slice(0,6)}…:`, e.message); }
+  cache.set(gid, datos);
+  return datos;
 }
 
 async function main(){
@@ -62,17 +93,32 @@ async function main(){
   const snap = await db.collection("avisos").get();
   console.log(`Hoy es ${hoyISO()} · ${snap.size} suscripción(es) registrada(s)`);
 
-  let enviados = 0, limpiados = 0, fallidos = 0;
+  let enviados = 0, limpiados = 0, fallidos = 0, deGrupo = 0;
+  const cacheGrupos = new Map();
 
   for (const doc of snap.docs){
     const d = doc.data();
-    if (!d.endpoint || !Array.isArray(d.examenes)) continue;
+    if (!d.endpoint) continue;
 
     const pendientes = [];
-    for (const ex of d.examenes){
+
+    // exámenes propios
+    for (const ex of (d.examenes || [])){
       if (!ex || typeof ex.fecha !== "string") continue;
       const dias = diasHasta(ex.fecha);
       if (AVISOS.includes(dias)) pendientes.push(armarAviso(ex, dias));
+    }
+
+    /* Exámenes de sus calendarios compartidos. Se avisa aunque el mismo examen
+       esté en la agenda personal: son dos anotaciones distintas y quien las
+       hizo puede querer las dos. */
+    for (const gid of (d.grupos || []).slice(0, 10)){
+      const g = await eventosDeGrupo(db, String(gid), cacheGrupos);
+      for (const ev of g.eventos){
+        if (!ev || typeof ev.fecha !== "string") continue;
+        const dias = diasHasta(ev.fecha);
+        if (AVISOS.includes(dias)){ pendientes.push(armarAvisoGrupo(ev, dias, g.nombre)); deGrupo++; }
+      }
     }
     if (!pendientes.length) continue;
 
@@ -97,7 +143,7 @@ async function main(){
     }
   }
 
-  console.log(`Enviados: ${enviados} · suscripciones vencidas borradas: ${limpiados} · fallos: ${fallidos}`);
+  console.log(`Enviados: ${enviados} (${deGrupo} de calendarios compartidos) · suscripciones vencidas borradas: ${limpiados} · fallos: ${fallidos}`);
 }
 
 main().catch(e => { console.error("Falló el envío:", e); process.exit(1); });

@@ -879,7 +879,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.05 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.06 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2807,6 +2807,9 @@ async function guardarSuscripcion(sub){
       materia: nombreMateriaEx(e).slice(0,80),
       tipo: TIPOS_EX[e.tipo] || "Examen",
     })),
+    /* A qué grupos pertenece: con esto el enviador sabe qué calendarios
+       compartidos revisar. Sólo los identificadores, nada del contenido. */
+    grupos: (grupos || []).slice(0,10).map(g => String(g.id)),
     actualizado: new Date().toISOString(),
   });
 }
@@ -3303,6 +3306,7 @@ async function grCrear(){
        sin el código, un grupo ajeno es invisible. */
     await FB.F.setDoc(FB.F.doc(FB.db,"invitaciones",cod), { grupo: ref.id });
     ST.grupoActivo = ref.id; guardar();
+    sincronizarAvisos();      // el enviador tiene que ver el grupo nuevo
     await grRefrescar();
     toast("Grupo creado. Compartí el código " + cod);
   } catch(e){ toast("No se pudo crear: " + explicar(e)); }
@@ -3331,6 +3335,7 @@ async function grUnirse(){
       actualizado: new Date().toISOString(),
     });
     ST.grupoActivo = gid; guardar();
+    sincronizarAvisos();      // idem al sumarse a uno
     await grRefrescar();
     toast("Te sumaste a " + g.nombre);
   } catch(e){ toast("No se pudo entrar: " + explicar(e)); }
@@ -3358,6 +3363,7 @@ async function grSalir(){
       });
     }
     ST.grupoActivo = null; guardar();
+    sincronizarAvisos();      // y al salir, para dejar de recibir sus avisos
     await grRefrescar();
     toast(ultimo ? "Grupo eliminado" : "Saliste del grupo");
   } catch(e){ toast("No se pudo salir: " + explicar(e)); }
