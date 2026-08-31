@@ -741,7 +741,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
   <nav><div class="nav-int">
     <button data-vista="materias" class="activa">Materias</button>
     <button data-vista="grilla">Armar horario</button>
-    <button data-vista="compartido">Calendario compartido</button>
+    <button data-vista="compartido">Calendario compartido<span id="badgeCompartido" class="badge" hidden></span></button>
     <button data-vista="instalar" id="tabInstalar">Instalar App</button>
     <button data-vista="agenda">Agenda<span id="badgeAgenda" class="badge" hidden></span></button>
     <button data-vista="mapa">Mapa de correlativas</button>
@@ -879,7 +879,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.06 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.07 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2779,7 +2779,13 @@ async function activarAvisos(){
   } catch(e){
     toast("No se pudieron activar: " + (e && e.message ? e.message : "error"));
   }
+  refrescarCampanas();
+}
+
+/* Activar desde una pestaña tiene que reflejarse en la otra. */
+function refrescarCampanas(){
   renderAvisos();
+  if ($("#avisosPushGr")) renderAvisos("Gr");
 }
 
 async function desactivarAvisos(){
@@ -2789,7 +2795,7 @@ async function desactivarAvisos(){
     if (usuario && FB) await FB.F.deleteDoc(FB.F.doc(FB.db,"avisos",usuario.uid)).catch(()=>{});
     toast("Avisos desactivados en este dispositivo");
   } catch(e){ toast("No se pudo desactivar"); }
-  renderAvisos();
+  refrescarCampanas();
 }
 
 /* Se guarda la suscripción junto con las fechas de los exámenes que faltan: el
@@ -2836,7 +2842,7 @@ addEventListener("online", () => { if (avisosPendiente) sincronizarAvisos(); });
 let avisosAbierto = false;
 
 /* Como la campana ya no lleva texto, acá se explica qué significa cada color. */
-function textoAvisos(caso){
+function textoAvisos(caso, suf){
   const leyenda = {
     activo:     ["verde", "los avisos están activados en este dispositivo"],
     inactivo:   ["rojo",  "los avisos están desactivados"],
@@ -2857,24 +2863,35 @@ function textoAvisos(caso){
   const cab = leyenda
     ? `<p><span class="av-punto ${leyenda[0]}"></span><b>Campana en ${leyenda[0]}:</b> ${leyenda[1]}.</p>`
     : "";
-  return cab + p.map(t => `<p>${t}</p>`).join("");
+  /* Abierta desde el calendario compartido, se aclara que es la misma campana:
+     no son dos interruptores distintos. */
+  const extra = (suf === "Gr" && (caso === "activo" || caso === "inactivo"))
+    ? `<p>Incluye los exámenes cargados en los calendarios de tus grupos, además de los de tu agenda. Es la misma campana que está en Agenda: alcanza con activarla en un lado.</p>`
+    : "";
+  return cab + p.map(t => `<p>${t}</p>`).join("") + extra;
 }
 
-function pintarDetalleAvisos(caso){
-  const d = $("#avisosDetalle"); if (!d) return;
-  d.innerHTML = avisosAbierto ? `<div class="av-detalle">${textoAvisos(caso)}</div>` : "";
+function pintarDetalleAvisos(caso, suf){
+  const d = $("#avisosDetalle" + (suf||"")); if (!d) return;
+  d.innerHTML = avisosAbierto ? `<div class="av-detalle">${textoAvisos(caso, suf)}</div>` : "";
 }
 
-function renderAvisos(){
-  const c = $("#avisosPush"); if (!c) return;
+/* La misma campana se dibuja en dos pestañas —Agenda y Calendario compartido—,
+   así que los identificadores llevan sufijo: si fueran fijos, la segunda
+   pisaría los manejadores de la primera. El estado es uno solo: activar desde
+   cualquiera de las dos activa todos los avisos. */
+function renderAvisos(suf){
+  suf = suf || "";
+  const c = $("#avisosPush" + suf); if (!c) return;
+  const idB = "avBell" + suf, idI = "avInfo" + suf;
 
-  const botonInfo = `<button class="av-info" id="avInfo" title="Cómo funcionan los avisos">i</button>`;
+  const botonInfo = `<button class="av-info" id="${idI}" title="Cómo funcionan los avisos">i</button>`;
   const armar = (clase, titulo, caso, apagado) => {
-    c.innerHTML = `<button class="av-bell ${clase}" id="avBell" title="${titulo}"${apagado?" disabled":""}
+    c.innerHTML = `<button class="av-bell ${clase}" id="${idB}" title="${titulo}"${apagado?" disabled":""}
         aria-label="${titulo}">🔔<span class="p"></span></button>${botonInfo}`;
-    pintarDetalleAvisos(caso);
-    $("#avInfo").onclick = () => { avisosAbierto = !avisosAbierto; pintarDetalleAvisos(caso); };
-    return $("#avBell");
+    pintarDetalleAvisos(caso, suf);
+    $("#"+idI).onclick = () => { avisosAbierto = !avisosAbierto; pintarDetalleAvisos(caso, suf); };
+    return $("#"+idB);
   };
 
   if (!pushSoportado())
@@ -2942,6 +2959,22 @@ function actualizarBadge(){
   }).length;
   const pintar=(sel,n)=>{ const b=$(sel); if(!b) return; b.hidden=!n; b.textContent=n; };
   pintar("#badgeAgenda", cuenta(DIAS_PROXIMO));
+
+  /* La solapa del compartido usa la misma idea: cuántos eventos se vienen. Se
+     suman los de todos los grupos, sin repetir el mismo evento si aparece en
+     más de uno. El umbral es el propio del grupo (GR_DIAS_AVISO), que es el que
+     ya usa su aviso "Se acerca en el grupo". */
+  const vistos = new Set();
+  let nGr = 0;
+  for (const ev of (grEventosTodos || [])){
+    if (!ev || typeof ev.fecha !== "string") continue;
+    const clave = ev.fecha + "|" + (ev.titulo || "");
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    const d = diasHasta(ev.fecha);
+    if (d >= 0 && d <= GR_DIAS_AVISO) nGr++;
+  }
+  pintar("#badgeCompartido", nGr);
 }
 function abrirModalExamen(id){
   const e=(ST.examenes||[]).find(x=>x.id===id);
@@ -3287,7 +3320,7 @@ async function grRefrescar(){
     if (grEvAbierto) await grCargarComentarios(grEvAbierto);
   }
   catch(e){ grError = explicar(e); }
-  grCargando = false; guardar(); renderCompartido();
+  grCargando = false; guardar(); actualizarBadge(); renderCompartido();
 }
 
 async function grCrear(){
@@ -3550,14 +3583,19 @@ let grComentarios = {}, grEvAbierto = null, grConteos = {};
    dentro de GR_DIAS_AVISO días y cuántos mensajes hay sin leer. Lo "sin leer" se
    mide contra la última vez que se miró ese grupo, guardada en ST. */
 let grResumen = {};
+/* Eventos de TODOS los grupos juntos: es lo que alimenta la burbuja de la
+   solapa, que tiene que contar aunque estés mirando otro grupo. */
+let grEventosTodos = [];
 
 async function grCargarResumen(){
-  grResumen = {};
+  grResumen = {}; grEventosTodos = [];
   for (const g of grupos){
     let evs = 0;
     try {
       const se = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"eventos"));
-      evs = se.docs.filter(d => { const n = diasHasta(d.data().fecha);
+      const lista = se.docs.map(d => d.data());
+      grEventosTodos.push(...lista);
+      evs = lista.filter(x => { const n = diasHasta(x.fecha);
         return n >= 0 && n <= GR_DIAS_AVISO; }).length;
     } catch(_){}
     grResumen[g.id] = { evs };
@@ -3805,7 +3843,9 @@ function renderCompartido(){
       <button class="btn primario" id="grNuevo">➕ Agregar evento al grupo</button>
       <button class="btn" id="grCrear2">Crear otro grupo</button>
       <button class="btn" id="grUnirse2">Entrar con un código</button>
+      <div class="av-fila" id="avisosPushGr"></div>
     </div>
+    <div id="avisosDetalleGr"></div>
     ${grError?`<div class="aviso">${escHTML(grError)}</div>`:""}
     <div class="gr-aviso">${g.miembros.length} de ${GR_MAX} integrantes · se actualiza al abrir la pestaña o con ↻</div>
     ${grAlertaHTML(fut)}
@@ -3813,6 +3853,7 @@ function renderCompartido(){
     <div class="ag-modos" id="grModos"></div>
     ${grListadoHTML(fut, pas, g)}`;
 
+  renderAvisos("Gr");        // la misma campana, en la fila de acciones del grupo
   const modosCont = $("#grModos");
   if (modosCont) modosCont.innerHTML = Object.entries(MODOS_GRUPO).map(([k,t])=>
     `<button data-modo="${k}" class="${k===modoGrupo()?"activo":""}">${t}</button>`).join("");
