@@ -879,7 +879,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.07 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.08 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2384,6 +2384,24 @@ function urlGoogleCalendar(e){
   return "https://calendar.google.com/calendar/render?" + p.toString();
 }
 
+/* Misma idea para un evento del calendario compartido. Se separa de la anterior
+   porque aquéllos sacan el título del catálogo de materias y éstos ya lo traen
+   escrito, más el grupo y quién lo cargó. fechaGCal sirve igual: sólo mira
+   fecha y hora. */
+function urlGoogleCalendarGrupo(ev, grupo){
+  const p = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `${GR_TIPOS[ev.tipo] || "Evento"} · ${ev.titulo}`,
+    dates: fechaGCal(ev),
+    details: [ev.detalle,
+      grupo ? `Calendario compartido: ${grupo}` : "",
+      ev.autorNombre ? `Lo cargó ${ev.autorNombre}` : "",
+      "Agendado desde el Planificador de Ingeniería Industrial — UTN Haedo"]
+      .filter(Boolean).join("\n\n"),
+  });
+  return "https://calendar.google.com/calendar/render?" + p.toString();
+}
+
 /* Archivo .ics con todos los exámenes que faltan. A diferencia del enlace, éste
    sí puede llevar avisos, y sirve para cualquier calendario, no sólo Google. */
 function icsExamenes(evs){
@@ -3755,6 +3773,26 @@ async function vaciarCalendario(g){
   } catch(e){ toast("No se pudo vaciar: " + explicar(e)); }
 }
 
+/* Exporta el calendario del grupo a un archivo, con avisos a 5, 2 y 1 día.
+   Reutiliza el mismo armador que la agenda: le basta con recibir los eventos
+   con la forma que espera. */
+function exportarGrupoIcs(){
+  const g = grActivo(); if (!g) return;
+  const fut = grEventos.filter(x => diasHasta(x.fecha) >= 0);
+  if (!fut.length) return toast("No hay eventos por delante en este grupo");
+  const comoExamen = fut.map(x => ({
+    id: "gr" + x.id, fecha: x.fecha, hora: x.hora || "",
+    tipo: "otro", detalle: x.detalle || "",
+    // el armador pide el nombre por nombreMateriaEx: se le pasa ya resuelto
+    materiaLibre: x.titulo, o: null,
+  }));
+  const a = document.createElement("a");
+  a.download = `${g.nombre.replace(/[^\wáéíóúñ ]/gi,"").trim().replace(/\s+/g,"-").toLowerCase()}.ics`;
+  a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(icsExamenes(comoExamen));
+  a.click();
+  toast(`${fut.length} evento${fut.length>1?"s":""} con avisos a 5, 2 y 1 día`);
+}
+
 function grEventoHTML(e, g){
   const d = diasHasta(e.fecha), c = textoCuenta(d);
   const cls = d<0 ? "pasado" : d<=2 ? "urgente" : d<=7 ? "pronto" : "";
@@ -3776,6 +3814,9 @@ function grEventoHTML(e, g){
       <button class="gr-vercom" data-gr-com="${e.id}">${
         grEvAbierto===e.id ? "ocultar comentarios"
         : `💬 comentarios${grConteos[e.id]?" ("+grConteos[e.id]+")":""}`}</button>
+      ${d>=0?`<a class="btn-mini cal" href="${urlGoogleCalendarGrupo(e, g.nombre)}"
+        target="_blank" rel="noopener"
+        title="Abre Google Calendar con los datos cargados">📅 Google Calendar</a>`:""}
       ${puedo?`<button class="btn-mini" data-gr-edit="${e.id}">editar</button>
       <button class="btn-mini" data-gr-del="${e.id}">eliminar</button>`:""}
     </div>
@@ -3843,6 +3884,7 @@ function renderCompartido(){
       <button class="btn primario" id="grNuevo">➕ Agregar evento al grupo</button>
       <button class="btn" id="grCrear2">Crear otro grupo</button>
       <button class="btn" id="grUnirse2">Entrar con un código</button>
+      <button class="btn" id="grIcs" title="Descargar los eventos del grupo con avisos">📅 Exportar</button>
       <div class="av-fila" id="avisosPushGr"></div>
     </div>
     <div id="avisosDetalleGr"></div>
@@ -3870,6 +3912,8 @@ function renderCompartido(){
   };
   const vaciar = $("#grVaciar");
   if (vaciar) vaciar.onclick = () => vaciarCalendario(g);
+  const bIcs = $("#grIcs");
+  if (bIcs) bIcs.onclick = exportarGrupoIcs;
   $("#grNuevo").onclick   = () => grModalEvento(null);
   $("#grCrear2").onclick  = grCrear;
   $("#grUnirse2").onclick = grUnirse;
