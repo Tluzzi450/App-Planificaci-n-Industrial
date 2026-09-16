@@ -673,6 +673,10 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
   .nav-int button{padding:10px 11px;font-size:12.5px}
 }
 /* ---------- agenda de exámenes ---------- */
+/* Ojo: declarar display:inline-flex anula el atributo hidden del navegador,
+   que funciona poniendo display:none. Sin la regla de abajo, la burbuja se ve
+   igual con un 0 adentro aunque esté marcada como oculta. */
+.badge[hidden]{display:none}
 .badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;
   border-radius:99px;background:var(--ambar);color:#4a3300;font-size:11px;font-weight:800}
 .burbujas{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
@@ -879,7 +883,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.08 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.09 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2975,7 +2979,8 @@ function actualizarBadge(){
     if(!e||typeof e.fecha!=="string") return false;
     const d=diasHasta(e.fecha); return d>=0&&d<=tope;
   }).length;
-  const pintar=(sel,n)=>{ const b=$(sel); if(!b) return; b.hidden=!n; b.textContent=n; };
+  // texto vacío además de oculta: si algún estilo la mostrara, no diría "0"
+  const pintar=(sel,n)=>{ const b=$(sel); if(!b) return; b.hidden=!n; b.textContent=n?n:""; };
   pintar("#badgeAgenda", cuenta(DIAS_PROXIMO));
 
   /* La solapa del compartido usa la misma idea: cuántos eventos se vienen. Se
