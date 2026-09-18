@@ -108,16 +108,9 @@ nav{background:var(--marca)}
 .nav-int button{background:none;border:none;color:#bcd6e0;font-weight:700;font-size:14px;padding:12px 18px;border-bottom:3px solid transparent;white-space:nowrap}
 .nav-int button:hover{color:#fff}
 .nav-int button.activa{color:#fff;border-bottom-color:var(--ambar)}
-/* ---------- solapas reordenables ---------- */
-.nav-int button[data-vista]{cursor:grab;user-select:none;-webkit-user-select:none;
-  -webkit-touch-callout:none;touch-action:pan-x}
-.nav-int button.arrastrando{opacity:.55;cursor:grabbing;background:rgba(255,255,255,.14);
-  border-radius:9px 9px 0 0;transform:scale(1.04)}
-.nav-int.reordenando{cursor:grabbing}
-.nav-int.reordenando button[data-vista]{touch-action:none}
-#resetOrden{color:#8fb4c4;font-size:15px;padding:12px 14px;flex:none;align-self:center;
-  background:none;border:none;line-height:1}
-#resetOrden:hover{color:#fff}
+/* Las solapas van en un orden fijo. Sólo hace falta que no se pueda seleccionar
+   el texto al arrastrar la barra de costado en el celular. */
+.nav-int button[data-vista]{cursor:pointer;user-select:none;-webkit-user-select:none}
 /* Nada debe poder estirar la página a lo ancho. Ojo: NO se usa overflow-x
    hidden en el body, porque eso además bloquea el desplazamiento lateral de
    los contenedores internos —la grilla semanal y la lista de comisiones dejan
@@ -738,6 +731,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <button class="btn" id="btnImportar" title="Carga un estado exportado previamente">⬆ Importar</button>
       <input type="file" id="inpImportar" accept=".json" hidden>
       <button class="btn peligro" id="btnReiniciar">Reiniciar</button>
+      <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo" hidden>⬇</button>
       <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄</button>
     </div>
   </div>
@@ -745,13 +739,11 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
   <nav><div class="nav-int">
     <button data-vista="materias" class="activa">Materias</button>
     <button data-vista="grilla">Armar horario</button>
-    <button data-vista="compartido">Calendario compartido<span id="badgeCompartido" class="badge" hidden></span></button>
-    <button data-vista="instalar" id="tabInstalar">Instalar App</button>
     <button data-vista="agenda">Agenda<span id="badgeAgenda" class="badge" hidden></span></button>
+    <button data-vista="compartido">Calendario compartido<span id="badgeCompartido" class="badge" hidden></span></button>
     <button data-vista="mapa">Mapa de correlativas</button>
     <button data-vista="simulador">Simulador de carrera</button>
     <button data-vista="avance">Mi avance</button>
-    <button id="resetOrden" title="Volver al orden original de las solapas" hidden>↺</button>
   </div></nav>
 </header>
 <main>
@@ -812,11 +804,6 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <div id="grCont"></div>
   </div>
 
-  <div id="vista-instalar" hidden>
-    <h2>Instalar la app</h2>
-    <p style="margin-bottom:16px;color:var(--muted);max-width:860px">Se instala desde el navegador, sin pasar por ninguna tienda. Queda con ícono propio, ocupa la pantalla completa y funciona sin internet.</p>
-    <div id="instCont"></div>
-  </div>
 
   <div id="vista-agenda" hidden>
     <h2>Agenda de exámenes</h2>
@@ -883,7 +870,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.09 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.10 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -1021,7 +1008,6 @@ const CLAVE="planificador-"+CARRERA.slug+"-frh-v1";
 let ST = {version:1, estados:{}, notas:{}, aplazos:{}, grilla:{}, sim:{asumir:true, anios:[]}, manuales:[], horarios:null, examenes:[], _mseq:0, _eseq:0};
 function cargar(){ try{ const raw=localStorage.getItem(CLAVE); if(raw){ const d=JSON.parse(raw); if(d&&d.version===1){ ST={...ST,...d};
   if(!Array.isArray(ST.manuales)) ST.manuales=[]; if(!ST.notas) ST.notas={}; if(!ST.aplazos) ST.aplazos={};
-  if(!Array.isArray(ST.ordenSolapas)) ST.ordenSolapas=[];
   if(!Array.isArray(ST.examenes)) ST.examenes=[];
   if(ST.horarios&&Array.isArray(ST.horarios.comisiones)&&ST.horarios.comisiones.length) COMISIONES=construirComisiones(ST.horarios.comisiones);
 } } }catch(e){} }
@@ -1077,7 +1063,6 @@ let vista="materias";
 $$(".nav-int button[data-vista]").forEach(b=>b.onclick=()=>{
   // al abrir el calendario compartido se busca lo último que cargó el grupo
   if (b.dataset.vista==="compartido" && usuario && FB && !grCargando) setTimeout(grRefrescar,0);
-  if(huboArrastre) return;            // venía de reordenar, no es un clic
   vista=b.dataset.vista;
   $$(".nav-int button[data-vista]").forEach(x=>x.classList.toggle("activa",x===b));
   VISTAS.forEach(v=>$("#vista-"+v).hidden=v!==vista);
@@ -1371,14 +1356,29 @@ function cerrarModal(){ $("#velo").classList.remove("abierto"); }
 $("#velo").onclick=e=>{ if(e.target.id==="velo") cerrarModal(); };
 
 /* ================= VISTA GRILLA ================= */
+/* Todo lo que se puede cursar, sin mirar filtros. Es contra esto que el contador
+   dice "tantas de tantas". */
+function materiasCursables(){
+  return MATERIAS.filter(m => comsDe(m.o).length && (puedeCursar(m.o)||est(m.o)==="cursando"));
+}
 function materiasParaGrilla(){
-  return MATERIAS.filter(m=>comsDe(m.o).length && (puedeCursar(m.o)||est(m.o)==="cursando"));
+  const soloElec = filtroCom().carrera === "electivas";
+  // la ya elegida se muestra siempre: si desapareciera al mover el filtro no
+  // habría cómo quitarla, y parecería que se perdió del horario
+  return materiasCursables().filter(m => !soloElec || m.electiva || ST.grilla[m.o]);
 }
 function renderGrillaLista(){
   renderFiltrosCom();
   const cont=$("#listaCursables"); cont.innerHTML="";
   const ms=materiasParaGrilla();
-  if(!ms.length){ cont.innerHTML=`<p style="padding:14px;color:var(--gris);font-weight:600">No hay materias cursables según tu estado actual. Marcá tus materias en la pestaña «Materias».</p>`; return; }
+  if(!ms.length){
+    // no es lo mismo no tener materias que haberlas tapado con un filtro
+    const porFiltro = materiasCursables().length > 0;
+    cont.innerHTML = `<p style="padding:14px;color:var(--gris);font-weight:600">${porFiltro
+      ? "Ninguna electiva entre las materias que podés cursar. Cambiá el filtro de especialidad a «Todas»."
+      : "No hay materias cursables según tu estado actual. Marcá tus materias en la pestaña «Materias»."}</p>`;
+    return;
+  }
   for (const m of ms){
     const el=document.createElement("div"); el.className="mat-item";
     const elegida=ST.grilla[m.o];
@@ -1409,18 +1409,14 @@ const claveCom = c => c.manual ? "M"+c.mid : c.curso+"|"+norm(c.materia);
    El filtro es uno solo y vale para las dos cosas: la lista y la búsqueda
    automática. Se guarda en ST, así que viaja con la cuenta. */
 const FILTRO_BASE = { carrera:"todas", modalidad:"todas", recursantes:true };
+/* "electivas" deja en la lista sólo las materias electivas: sirve para elegir
+   con qué completar las horas que pide el plan, sin el ruido de las obligatorias. */
 function filtroCom(){ return { ...FILTRO_BASE, ...(ST.filtroCom||{}) }; }
 const filtroActivo = () => JSON.stringify(filtroCom()) !== JSON.stringify(FILTRO_BASE);
-
-/* Los cursos de una sola letra (H, I, J…) son las comisiones abiertas a
-   cualquier carrera: no son "de otra especialidad" aunque el informe las liste
-   bajo una. Las de otra regional, cargadas a mano, tampoco se filtran nunca. */
-const comisionAbierta = c => !c.carrera || c.carrera === HOR.carrera || /^[A-Z]{1,2}(-R)?$/.test(c.curso||"");
 
 function comisionVisible(c){
   if (c.manual) return true;
   const f = filtroCom();
-  if (f.carrera === "propia" && !comisionAbierta(c)) return false;
   if (f.modalidad !== "todas" && (c.modalidad||"presencial") !== f.modalidad) return false;
   if (!f.recursantes && c.recursantes) return false;
   return true;
@@ -1432,14 +1428,13 @@ const comsVisibles = o => comsDe(o).filter(c => comisionVisible(c) || ST.grilla[
 function renderFiltrosCom(){
   const cont = $("#filtrosCom"); if(!cont) return;
   const f = filtroCom();
-  const ms = materiasParaGrilla();
-  const tot = ms.reduce((t,m) => t + comsDe(m.o).length, 0);
-  const vis = ms.reduce((t,m) => t + comsVisibles(m.o).length, 0);
+  const tot = materiasCursables().reduce((t,m) => t + comsDe(m.o).length, 0);
+  const vis = materiasParaGrilla().reduce((t,m) => t + comsVisibles(m.o).length, 0);
   const sel = (id, val, ops) => `<select id="${id}">` + ops.map(([v,t]) =>
     `<option value="${v}"${val===v?" selected":""}>${t}</option>`).join("") + `</select>`;
   cont.innerHTML = `
     <div class="grupo"><label class="tit">Especialidad</label>
-      ${sel("fcCarrera", f.carrera, [["todas","Todas"],["propia",HOR.carrera+" y abiertas"]])}</div>
+      ${sel("fcCarrera", f.carrera, [["todas","Todas"],["electivas","Electivas"]])}</div>
     <div class="grupo"><label class="tit">Modalidad</label>
       ${sel("fcModalidad", f.modalidad, [["todas","Todas"],["presencial","Presencial"],["virtual","Virtual"]])}</div>
     <label class="chk"><input type="checkbox" id="fcRec"${f.recursantes?" checked":""}> Incluir recursantes</label>
@@ -3168,14 +3163,11 @@ function sanearEstado(d){
              docentes:(Array.isArray(c.docentes)?c.docentes:[]).map(x=>limpiar(x,LARGO.docente)),
              bloques:c.bloques.map(b=>({...b, aula:limpiar(b.aula,LARGO.aula)}))}))}
         : null;
-  /* El orden puede venir de otro dispositivo o de un JSON ajeno: se descartan
-     los nombres desconocidos y los repetidos. Lo que falte se completa después. */
-  const ordenSolapas = Array.isArray(d.ordenSolapas)
-    ? [...new Set(d.ordenSolapas.filter(v => typeof v === "string" && VISTAS.includes(v)))]
-    : [];
+  /* Los archivos exportados por versiones anteriores traen "ordenSolapas", de
+     cuando las solapas se podían mover. Se descarta sin hacer ruido. */
   const fc = d.filtroCom || {};
   const filtroCom = {
-    carrera:     ["todas","propia"].includes(fc.carrera) ? fc.carrera : "todas",
+    carrera:     ["todas","electivas"].includes(fc.carrera) ? fc.carrera : "todas",
     modalidad:   ["todas","presencial","virtual"].includes(fc.modalidad) ? fc.modalidad : "todas",
     recursantes: fc.recursantes !== false,
   };
@@ -3189,7 +3181,7 @@ function sanearEstado(d){
   if (d.grVistos && typeof d.grVistos === "object")
     for (const [k,val] of Object.entries(d.grVistos))
       if (typeof val === "string") grVistos[limpiar(k,60)] = limpiar(val,40);
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, ordenSolapas, filtroCom, modoAgenda, pinPlegado, pinFirma, grupoActivo, modoGrupo, grVistos,
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, filtroCom, modoAgenda, pinPlegado, pinFirma, grupoActivo, modoGrupo, grVistos,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -4237,106 +4229,11 @@ function pintarPie(){
 /* ================= ORDEN DE LAS SOLAPAS =================
    El orden vive en ST, así que viaja con la cuenta: si alguien lo acomoda en la
    computadora, lo encuentra igual en el celular. */
-const VISTAS = ["materias","grilla","instalar","compartido","agenda","mapa","simulador","avance"];
-
-/* Lo guardado primero, y atrás lo que falte. Así, cuando una versión nueva suma
-   una solapa, aparece al final en vez de desaparecer. */
-function ordenActual(){
-  const g = (ST.ordenSolapas || []).filter(v => VISTAS.includes(v));
-  const u = [...new Set(g)];
-  return [...u, ...VISTAS.filter(v => !u.includes(v))];
-}
-function aplicarOrdenSolapas(){
-  const nav = $(".nav-int"); if(!nav) return;
-  const orden = ordenActual();
-  const actual = [...nav.querySelectorAll("button[data-vista]")].map(b => b.dataset.vista);
-  if (actual.join() === orden.join()) return;      // ya está: mover nodos de gusto molesta al foco
-  const reset = $("#resetOrden");
-  for (const v of orden){
-    const b = nav.querySelector(`button[data-vista="${v}"]`);
-    if (b) nav.insertBefore(b, reset || null);
-  }
-}
-function guardarOrdenSolapas(){
-  const nav = $(".nav-int");
-  ST.ordenSolapas = [...nav.querySelectorAll("button[data-vista]")].map(b => b.dataset.vista);
-  guardar();
-  pintarResetOrden();
-}
-function pintarResetOrden(){
-  const b = $("#resetOrden"); if(!b) return;
-  b.hidden = ordenActual().join() === VISTAS.join();
-}
-
-/* Arrastre con Pointer Events: el mismo código sirve para mouse y para dedo.
-   En el celular la barra se desplaza de costado, así que arrancar a arrastrar
-   apenas se toca robaría el gesto de scroll: por eso el dedo necesita mantener
-   apretado, y el mouse sólo mover unos píxeles. */
-let huboArrastre = false;
-(function solapasArrastrables(){
-  const nav = $(".nav-int"); if(!nav) return;
-  const ESPERA_DEDO = 320, UMBRAL_MOUSE = 6;
-  let btn = null, activo = false, x0 = 0, reloj = null;
-
-  const soltar = () => {
-    if (reloj) { clearTimeout(reloj); reloj = null; }
-    if (activo){
-      btn.classList.remove("arrastrando");
-      nav.classList.remove("reordenando");
-      guardarOrdenSolapas();
-      huboArrastre = true;
-      setTimeout(() => { huboArrastre = false; }, 0);   // que no dispare el clic
-    }
-    btn = null; activo = false;
-  };
-  const empezar = () => {
-    if (!btn || activo) return;
-    activo = true;
-    btn.classList.add("arrastrando");
-    nav.classList.add("reordenando");
-    if (navigator.vibrate) navigator.vibrate(12);       // avisa que entró en modo mover
-  };
-
-  nav.addEventListener("pointerdown", ev => {
-    const b = ev.target.closest("button[data-vista]");
-    if (!b || ev.button) return;
-    btn = b; x0 = ev.clientX; activo = false;
-    b.setPointerCapture?.(ev.pointerId);
-    if (ev.pointerType !== "mouse") reloj = setTimeout(empezar, ESPERA_DEDO);
-  });
-
-  nav.addEventListener("pointermove", ev => {
-    if (!btn) return;
-    if (!activo){
-      if (ev.pointerType === "mouse" && Math.abs(ev.clientX - x0) > UMBRAL_MOUSE) empezar();
-      else if (ev.pointerType !== "mouse" && Math.abs(ev.clientX - x0) > 10){
-        clearTimeout(reloj); reloj = null; btn = null;   // se movió antes: quería desplazar
-      }
-      return;
-    }
-    // se busca sobre qué solapa está el dedo y se reacomoda el DOM en vivo
-    const bajo = document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.("button[data-vista]");
-    if (!bajo || bajo === btn) return;
-    const orden = [...nav.querySelectorAll("button[data-vista]")];
-    const antes = orden.indexOf(bajo) < orden.indexOf(btn);
-    nav.insertBefore(btn, antes ? bajo : bajo.nextSibling);
-  });
-
-  nav.addEventListener("pointerup", soltar);
-  nav.addEventListener("pointercancel", soltar);
-  // en el celular hay que frenar el desplazamiento lateral mientras se arrastra
-  nav.addEventListener("touchmove", ev => { if (activo) ev.preventDefault(); }, { passive:false });
-
-  const reset = $("#resetOrden");
-  if (reset) reset.onclick = () => {
-    ST.ordenSolapas = []; guardar(); aplicarOrdenSolapas(); pintarResetOrden();
-    toast("Orden original restablecido");
-  };
-})();
+/* Las solapas van en este orden y no se mueven. "instalar" ya no está: la
+   instalación se abre con el botón ⬇ del encabezado, al lado del de actualizar. */
+const VISTAS = ["materias","grilla","agenda","compartido","mapa","simulador","avance"];
 
 function render(){
-  aplicarOrdenSolapas();
-  pintarResetOrden();
   pintarPie();
   renderPin();
   renderBanner();
@@ -4344,7 +4241,6 @@ function render(){
   if (vista==="materias") renderMaterias();
   if (vista==="grilla") renderGrilla();
   if (vista==="compartido") renderCompartido();
-  if (vista==="instalar") renderInstalar();
   if (vista==="agenda") renderAgenda();
   if (vista==="mapa") renderMapa();
   if (vista==="simulador") renderSim();
@@ -4365,15 +4261,43 @@ let promptInstalar = null;
 addEventListener("beforeinstallprompt", ev => {
   ev.preventDefault();                 // frena el cartel automático del navegador
   promptInstalar = ev;
-  if (vista === "instalar") renderInstalar();
+  pintarBotonInstalar();
+  if ($("#instCont")) renderInstalar();          // si el panel está abierto, se pone al día
 });
-addEventListener("appinstalled", () => { promptInstalar = null; renderInstalar(); });
+addEventListener("appinstalled", () => {
+  promptInstalar = null;
+  pintarBotonInstalar();
+  if ($("#instCont")) renderInstalar();
+});
 
 const yaInstalada = () =>
   matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const esIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);   // iPad moderno
 const esSafari = () => /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+
+/* El panel de instalación. Antes era una solapa; ahora lo abre el botón ⬇ del
+   encabezado. El contenido es el mismo: cambia dónde se dibuja. */
+function abrirModalInstalar(){
+  $("#modal").innerHTML = `<button class="cerrar" onclick="cerrarModal()">✕</button>
+    <h3>Instalar la app</h3>
+    <p style="margin:0 0 14px;color:var(--muted);font-size:13px">Se instala desde el navegador, sin pasar por
+    ninguna tienda. Queda con ícono propio, ocupa la pantalla completa y funciona sin internet.</p>
+    <div id="instCont"></div>`;
+  $("#velo").classList.add("abierto");
+  renderInstalar();
+}
+
+/* Se esconde sólo si ya está instalada: ofrecer instalar lo ya instalado confunde.
+   En los demás casos se muestra siempre, porque el panel tiene algo útil que decir
+   en cada uno —iPhone, visor de mensajería, archivo suelto—, y esconderlo dejaría
+   sin respuesta justo a quien la necesita. */
+function pintarBotonInstalar(){
+  const b = $("#btnInstalarApp"); if(!b) return;
+  b.hidden = yaInstalada();
+}
+$("#btnInstalarApp").onclick = abrirModalInstalar;
+pintarBotonInstalar();
 
 function renderInstalar(){
   const c = $("#instCont"); if(!c) return;
@@ -4453,11 +4377,13 @@ function avisarActualizacion(reg){
   b.appendChild(btn); document.body.appendChild(b);
 }
 
-/* Atajos del ícono de la pantalla de inicio: ?v=eventos abre esa pestaña directo. */
+/* Atajos del ícono de la pantalla de inicio: ?v=agenda abre esa pestaña directo.
+   "instalar" dejó de ser una pestaña, pero puede venir de un atajo viejo: abre
+   el panel en vez de no hacer nada. */
 (function(){
   const v=new URLSearchParams(location.search).get("v");
-  const valida=VISTAS;
-  if(!v || !valida.includes(v)) return;
+  if (v === "instalar") return void abrirModalInstalar();
+  if(!v || !VISTAS.includes(v)) return;
   const b=document.querySelector(`.nav-int button[data-vista="${v}"]`);
   if(b) b.click();
 })();
