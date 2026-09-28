@@ -98,7 +98,6 @@ async function main(){
 
   for (const doc of snap.docs){
     const d = doc.data();
-    if (!d.endpoint) continue;
 
     const pendientes = [];
 
@@ -122,28 +121,47 @@ async function main(){
     }
     if (!pendientes.length) continue;
 
-    const sub = { endpoint: d.endpoint, keys: { p256dh: d.p256dh, auth: d.auth } };
-    for (const aviso of pendientes){
-      if (SECO){ console.log(`  [seco] ${doc.id.slice(0,6)}… → ${aviso.titulo} · ${aviso.cuerpo}`); enviados++; continue; }
-      try {
-        await webpush.sendNotification(sub, JSON.stringify(aviso));
-        enviados++;
-      } catch(e){
-        /* 404 y 410 significan que esa suscripción ya no existe: el navegador
-           la dio de baja o la persona desinstaló la app. Se borra para no
-           seguir intentando todos los días. */
-        if (e.statusCode === 404 || e.statusCode === 410){
-          await doc.ref.delete().catch(()=>{});
-          limpiados++;
-          break;
+    /* Una persona puede tener los avisos puestos en varios aparatos —el celular
+       y la computadora, por ejemplo—, y el mismo aviso va a todos. Cada uno vive
+       en su propio documento para que activarlos en uno no pise al otro. */
+    const aparatos = (await doc.ref.collection("dispositivos").get().catch(() => null));
+    const destinos = aparatos ? aparatos.docs.map(a => ({
+      ref: a.ref,
+      sub: { endpoint: a.data().endpoint, keys: { p256dh: a.data().p256dh, auth: a.data().auth } },
+    })) : [];
+
+    /* Forma anterior: la dirección estaba en el documento de la persona. Se
+       sigue atendiendo para quien todavía no abrió la versión nueva; en cuanto
+       la abre, su documento se reescribe sin estos campos y pasa a la lista de
+       arriba. */
+    if (d.endpoint && !destinos.length)
+      destinos.push({ ref: doc.ref, sub: { endpoint: d.endpoint, keys: { p256dh: d.p256dh, auth: d.auth } }, viejo: true });
+
+    if (!destinos.length) continue;      // dio de baja todos sus aparatos
+
+    for (const destino of destinos){
+      for (const aviso of pendientes){
+        if (SECO){ console.log(`  [seco] ${doc.id.slice(0,6)}…/${destino.ref.id.slice(0,6)}… → ${aviso.titulo} · ${aviso.cuerpo}`); enviados++; continue; }
+        try {
+          await webpush.sendNotification(destino.sub, JSON.stringify(aviso));
+          enviados++;
+        } catch(e){
+          /* 404 y 410 significan que esa suscripción ya no existe: el navegador
+             la dio de baja o la persona desinstaló la app. Se borra ese aparato
+             —no los otros— para no seguir intentando todos los días. */
+          if (e.statusCode === 404 || e.statusCode === 410){
+            await destino.ref.delete().catch(()=>{});
+            limpiados++;
+            break;                        // el resto de los avisos de ESTE aparato sobra
+          }
+          console.error(`  error con ${doc.id.slice(0,6)}…:`, e.statusCode || e.message);
+          fallidos++;
         }
-        console.error(`  error con ${doc.id.slice(0,6)}…:`, e.statusCode || e.message);
-        fallidos++;
       }
     }
   }
 
-  console.log(`Enviados: ${enviados} (${deGrupo} de calendarios compartidos) · suscripciones vencidas borradas: ${limpiados} · fallos: ${fallidos}`);
+  console.log(`Enviados: ${enviados} (${deGrupo} de calendarios compartidos) · aparatos dados de baja: ${limpiados} · fallos: ${fallidos}`);
 }
 
 main().catch(e => { console.error("Falló el envío:", e); process.exit(1); });

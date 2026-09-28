@@ -731,7 +731,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <button class="btn" id="btnImportar" title="Carga un estado exportado previamente">⬆ Importar</button>
       <input type="file" id="inpImportar" accept=".json" hidden>
       <button class="btn peligro" id="btnReiniciar">Reiniciar</button>
-      <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo" hidden>⬇</button>
+      <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo">📲</button>
       <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄</button>
     </div>
   </div>
@@ -870,7 +870,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.10 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.28b · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2768,6 +2768,13 @@ function claveABytes(b64){
   return Uint8Array.from([...bruto].map(c => c.charCodeAt(0)));
 }
 
+/* Que los avisos estén activados es una decisión de ESTE aparato, no de la
+   cuenta: activarlos en el celular no debe activarlos en la computadora. Por eso
+   se anota en el navegador y no en ST, que viaja con el usuario. */
+const LLAVE_QUIERE = "planificador-avisos-activos";
+const quiereAvisos = () => { try{ return localStorage.getItem(LLAVE_QUIERE)==="1"; }catch(_){ return false; } };
+const anotarQuiere = v => { try{ v ? localStorage.setItem(LLAVE_QUIERE,"1") : localStorage.removeItem(LLAVE_QUIERE); }catch(_){} };
+
 async function suscripcionActual(){
   if (!pushSoportado()) return null;
   try {
@@ -2792,6 +2799,7 @@ async function activarAvisos(){
       applicationServerKey: claveABytes(VAPID_PUBLICA),
     });
     await guardarSuscripcion(sub);
+    anotarQuiere(true);
     toast("Listo: vas a recibir avisos de tus exámenes");
   } catch(e){
     toast("No se pudieron activar: " + (e && e.message ? e.message : "error"));
@@ -2807,9 +2815,13 @@ function refrescarCampanas(){
 
 async function desactivarAvisos(){
   try {
+    anotarQuiere(false);            // antes de nada: que la reparación no los reviva
     const sub = await suscripcionActual();
     if (sub) await sub.unsubscribe();
-    if (usuario && FB) await FB.F.deleteDoc(FB.F.doc(FB.db,"avisos",usuario.uid)).catch(()=>{});
+    /* Se da de baja este aparato nada más. El documento de la persona queda: ahí
+       están sus exámenes, que siguen valiendo para los otros aparatos donde sí
+       tenga los avisos puestos. */
+    if (usuario && FB) await FB.F.deleteDoc(refAparato()).catch(()=>{});
     toast("Avisos desactivados en este dispositivo");
   } catch(e){ toast("No se pudo desactivar"); }
   refrescarCampanas();
@@ -2817,13 +2829,45 @@ async function desactivarAvisos(){
 
 /* Se guarda la suscripción junto con las fechas de los exámenes que faltan: el
    enviador necesita las dos cosas y así lee un solo documento por persona. */
+/* Un identificador para ESTE aparato. No sale de nada personal: es un número al
+   azar que sólo sirve para poder dar de baja este teléfono sin tocar los demás.
+   Si el navegador borra sus datos se inventa otro, y el anterior queda huérfano
+   hasta que el enviador reciba un 410 y lo limpie. */
+const LLAVE_APARATO = "planificador-dispositivo";
+function idAparato(){
+  try {
+    let v = localStorage.getItem(LLAVE_APARATO);
+    if (!v){
+      v = (crypto.randomUUID ? crypto.randomUUID()
+                             : String(Date.now()) + Math.random().toString(36).slice(2)).slice(0,40);
+      localStorage.setItem(LLAVE_APARATO, v);
+    }
+    return v;
+  } catch(_){ return "unico"; }         // sin almacenamiento: se comporta como antes
+}
+const refAparato = () => FB.F.doc(FB.db, "avisos", usuario.uid, "dispositivos", idAparato());
+
+/* Se guardan dos cosas separadas, y por qué:
+   - QUÉ avisar (exámenes y grupos) es igual en todos sus aparatos → documento
+     único de la persona.
+   - A DÓNDE avisar cambia en cada uno → un documento por aparato.
+
+   Antes iba todo junto, así que activar los avisos en la computadora pisaba la
+   dirección del celular y dejaban de llegar ahí, sin que la campana del celular
+   se enterara: seguía en verde porque su suscripción local existía. */
 async function guardarSuscripcion(sub){
   if (!usuario || !FB || !sub) return;
   const j = sub.toJSON();
-  await FB.F.setDoc(FB.F.doc(FB.db,"avisos",usuario.uid), {
+  const ahora = new Date().toISOString();
+  await FB.F.setDoc(refAparato(), {
     endpoint: j.endpoint,
     p256dh: j.keys.p256dh,
     auth: j.keys.auth,
+    actualizado: ahora,
+  });
+  /* setDoc reemplaza el documento entero: de paso deja sin los campos de
+     dirección al documento de la persona, que es donde vivían antes. */
+  await FB.F.setDoc(FB.F.doc(FB.db,"avisos",usuario.uid), {
     nombre: (usuario.displayName || "").slice(0,60),
     examenes: futurosHasta(null).slice(0,40).map(e => ({
       id: String(e.id), fecha: e.fecha,
@@ -2833,7 +2877,7 @@ async function guardarSuscripcion(sub){
     /* A qué grupos pertenece: con esto el enviador sabe qué calendarios
        compartidos revisar. Sólo los identificadores, nada del contenido. */
     grupos: (grupos || []).slice(0,10).map(g => String(g.id)),
-    actualizado: new Date().toISOString(),
+    actualizado: ahora,
   });
 }
 
@@ -2846,13 +2890,78 @@ let avisosPendiente = false;
 
 async function sincronizarAvisos(){
   if (!usuario || !FB) { avisosPendiente = true; return; }
-  const sub = await suscripcionActual();
+  const sub = await repararAvisos();
   if (!sub) return;                       // sin avisos activados no hay nada que actualizar
   try { await guardarSuscripcion(sub); avisosPendiente = false; }
   catch(_){ avisosPendiente = true; }
 }
 
+/* ---- por qué existe esta reparación ----
+   El navegador puede dar de baja la suscripción sin que nadie la toque: la vence,
+   la rota o la pierde. Existe un evento para enterarse, pushsubscriptionchange,
+   pero su soporte es parcial —en Chrome, que es donde corre la mayoría, no se
+   puede contar con él—, así que el service worker solo no alcanza.
+
+   Sin esto, el síntoma es que los avisos "se apagan solos": la campana aparece en
+   rojo sin que el estudiante haya tocado nada y dejan de llegar las
+   notificaciones.
+
+   Como el permiso del navegador sigue concedido, volver a suscribirse no muestra
+   ningún cartel ni necesita que toque nada: se arregla en silencio al abrir la
+   app. Si el permiso fue revocado de verdad, no se insiste y la campana queda en
+   rojo, que es la verdad. */
+let reparando = null;
+async function repararAvisos(){
+  const sub = await suscripcionActual();
+  /* Quien ya tenía los avisos andando viene de una versión sin esta anotación:
+     que exista la suscripción es prueba suficiente de que los quiere. Sin esto,
+     a los que ya los usaban no se les repondría hasta tocar la campana. */
+  if (sub) { anotarQuiere(true); return sub; }
+  // sólo se repone lo que el estudiante había activado en este aparato
+  if (!quiereAvisos() || !pushSoportado()) return null;
+  if (Notification.permission !== "granted") return null;
+  if (reparando) return reparando;        // una sola reposición a la vez
+  reparando = (async () => {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const nueva = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: claveABytes(VAPID_PUBLICA),
+      });
+      // la dirección cambió: si no se sube, el enviador sigue escribiéndole a la vieja
+      await guardarSuscripcion(nueva).catch(()=>{ avisosPendiente = true; });
+      return nueva;
+    } catch(_){
+      anotarQuiere(false);                // no se pudo: no volver a intentarlo en bucle
+      return null;
+    } finally { reparando = null; }
+  })();
+  return reparando;
+}
+
 addEventListener("online", () => { if (avisosPendiente) sincronizarAvisos(); });
+
+/* Al volver a la app —muy común en el celular: queda abierta de fondo días— se
+   revisa que la suscripción siga viva. */
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && quiereAvisos()) revisarAvisos();
+});
+
+/* Y si el service worker llegó a renovarla por su cuenta, se sube la dirección
+   nueva apenas avisa. */
+if (navigator.serviceWorker)
+  navigator.serviceWorker.addEventListener("message", ev => {
+    if (ev.data === "avisos-renovados") revisarAvisos();
+  });
+
+async function revisarAvisos(){
+  if (!usuario || !FB) return;
+  const antes = await suscripcionActual();
+  await sincronizarAvisos();
+  const ahora = await suscripcionActual();
+  // si hubo que reponerla, la campana estaba mostrando rojo de más
+  if (!antes && ahora) refrescarCampanas();
+}
 
 /* El explicativo no ocupa lugar hasta que alguien toca la (i): sólo estado de
    pantalla, no se guarda. */
@@ -2918,7 +3027,9 @@ function renderAvisos(suf){
   if (Notification.permission === "denied")
     return void armar("off","Avisos bloqueados en tu navegador","bloqueado",true);
 
-  suscripcionActual().then(sub => {
+  /* Se repara antes de pintar: si el navegador dio de baja la suscripción, la
+     campana mostraría rojo por algo que se arregla solo y sin molestar a nadie. */
+  repararAvisos().then(sub => {
     const activo = Notification.permission === "granted" && !!sub;
     const b = armar(activo?"on":"off",
                     activo?"Avisos activados · tocá para desactivarlos"
@@ -4261,12 +4372,10 @@ let promptInstalar = null;
 addEventListener("beforeinstallprompt", ev => {
   ev.preventDefault();                 // frena el cartel automático del navegador
   promptInstalar = ev;
-  pintarBotonInstalar();
   if ($("#instCont")) renderInstalar();          // si el panel está abierto, se pone al día
 });
 addEventListener("appinstalled", () => {
   promptInstalar = null;
-  pintarBotonInstalar();
   if ($("#instCont")) renderInstalar();
 });
 
@@ -4288,16 +4397,11 @@ function abrirModalInstalar(){
   renderInstalar();
 }
 
-/* Se esconde sólo si ya está instalada: ofrecer instalar lo ya instalado confunde.
-   En los demás casos se muestra siempre, porque el panel tiene algo útil que decir
-   en cada uno —iPhone, visor de mensajería, archivo suelto—, y esconderlo dejaría
-   sin respuesta justo a quien la necesita. */
-function pintarBotonInstalar(){
-  const b = $("#btnInstalarApp"); if(!b) return;
-  b.hidden = yaInstalada();
-}
+/* Está siempre, igual que la solapa que reemplazó. Esconderlo cuando la app ya
+   está instalada lo hacía desaparecer justo al abrirla desde el ícono del
+   celular, que es donde más se lo busca; el panel ya avisa ahí que no hay nada
+   que instalar. */
 $("#btnInstalarApp").onclick = abrirModalInstalar;
-pintarBotonInstalar();
 
 function renderInstalar(){
   const c = $("#instCont"); if(!c) return;

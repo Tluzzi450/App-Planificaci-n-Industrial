@@ -11,7 +11,7 @@
  *
  * Al publicar una versión nueva: cambiá VERSION. Eso descarta la caché vieja.
  */
-const VERSION = "2026.09.10";
+const VERSION = "2026.09.28b";
 const CACHE = "planificador-industrial-" + VERSION;
 
 const ESENCIALES = [
@@ -115,6 +115,44 @@ self.addEventListener("notificationclick", ev => {
     for (const c of abiertas)
       if (c.url.includes(self.registration.scope) && "focus" in c) return c.focus();
     if (self.clients.openWindow) return self.clients.openWindow(destino);
+  })());
+});
+
+/* El navegador puede dar de baja la suscripción por su cuenta —la vence, la rota
+   o la pierde— y avisa con este evento. Si nadie lo atiende, los avisos se apagan
+   solos: getSubscription() pasa a devolver null, la campana se pone en rojo y el
+   enviador se queda con una dirección muerta.
+
+   Hay que volver a suscribirse con la MISMA clave que usa la app; si no, el
+   servidor no podría firmar los envíos. Por eso está repetida acá: este archivo
+   no puede leer constantes de index.html. Si alguna vez cambia, hay que cambiarla
+   en los dos lados.
+
+   La dirección nueva se guarda en Firestore desde la página, no desde acá: el
+   service worker no tiene la sesión del usuario. Alcanza con dejar viva la
+   suscripción; la app la sube sola la próxima vez que se abre. */
+const VAPID_PUBLICA = "BIYa77oUbV_Aj5X12DQTKh6R_8D2-vOi_ILkBosYKOn0LmiFcFZIU4PlannSpeQ33ZWpBZRSjdrk62SwQ3LhB44";
+
+function claveABytes(b64){
+  const pad = "=".repeat((4 - b64.length % 4) % 4);
+  const limpio = (b64 + pad).replace(/-/g,"+").replace(/_/g,"/");
+  const bruto = atob(limpio);
+  return Uint8Array.from([...bruto].map(c => c.charCodeAt(0)));
+}
+
+self.addEventListener("pushsubscriptionchange", ev => {
+  ev.waitUntil((async () => {
+    try {
+      // puede haberse renovado sola; si no, se pide una nueva
+      let sub = await self.registration.pushManager.getSubscription();
+      if (!sub) await self.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: claveABytes(VAPID_PUBLICA),
+      });
+      // si hay una pestaña abierta, que suba la dirección nueva ya mismo
+      const abiertas = await self.clients.matchAll({ type:"window", includeUncontrolled:true });
+      for (const c of abiertas) c.postMessage("avisos-renovados");
+    } catch(_){ /* sin permiso no se puede: la app lo resuelve al abrirse */ }
   })());
 });
 
