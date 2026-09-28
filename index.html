@@ -870,7 +870,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.09.28b · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.09.28c · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2859,6 +2859,9 @@ async function guardarSuscripcion(sub){
   if (!usuario || !FB || !sub) return;
   const j = sub.toJSON();
   const ahora = new Date().toISOString();
+  /* Se consultan antes de escribir: la lista en memoria sólo está cargada si se
+     pasó por la pestaña del calendario compartido, y esto corre al abrir la app. */
+  const misGrupos = await idsDeGrupos();
   await FB.F.setDoc(refAparato(), {
     endpoint: j.endpoint,
     p256dh: j.keys.p256dh,
@@ -2876,7 +2879,7 @@ async function guardarSuscripcion(sub){
     })),
     /* A qué grupos pertenece: con esto el enviador sabe qué calendarios
        compartidos revisar. Sólo los identificadores, nada del contenido. */
-    grupos: (grupos || []).slice(0,10).map(g => String(g.id)),
+    grupos: misGrupos.slice(0,10).map(String),
     actualizado: ahora,
   });
 }
@@ -3286,13 +3289,18 @@ function sanearEstado(d){
   const pinPlegado = d.pinPlegado === true;
   const pinFirma = limpiar(d.pinFirma, 400);
   const grupoActivo = limpiar(d.grupoActivo, 60) || null;
+  /* A qué grupos pertenece. Se guarda para que el enviador de avisos lo sepa aun
+     cuando la app se abre sin pasar por la pestaña del calendario compartido. */
+  const misGrupos = Array.isArray(d.misGrupos)
+    ? [...new Set(d.misGrupos.filter(x => typeof x === "string").map(x => limpiar(x,60)))].slice(0,10)
+    : [];
   const modoGrupo = ["fecha","mes","materia"].includes(d.modoGrupo) ? d.modoGrupo : "fecha";
   /* Última vez que se miró cada grupo: contra esto se calculan las novedades. */
   const grVistos = {};
   if (d.grVistos && typeof d.grVistos === "object")
     for (const [k,val] of Object.entries(d.grVistos))
       if (typeof val === "string") grVistos[limpiar(k,60)] = limpiar(val,40);
-  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, filtroCom, modoAgenda, pinPlegado, pinFirma, grupoActivo, modoGrupo, grVistos,
+  return {version:1, estados, notas, aplazos, grilla, sim, manuales, horarios, examenes, filtroCom, modoAgenda, pinPlegado, pinFirma, grupoActivo, modoGrupo, grVistos, misGrupos,
           actualizado: limpiar(d.actualizado, 40),
           _mseq:Math.max(0,d._mseq||0,...manuales.map(m=>m.mid)),
           _eseq:Math.max(0,d._eseq||0,...examenes.map(x=>x.id))};
@@ -3418,6 +3426,35 @@ async function grCargarGrupos(){
   const snap = await FB.F.getDocs(q);
   grupos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
   if (!grupos.some(g => g.id === ST.grupoActivo)) ST.grupoActivo = grupos[0] ? grupos[0].id : null;
+  anotarMisGrupos(grupos.map(g => g.id));
+}
+
+/* ---- por qué hace falta anotarlos ----
+   La lista de grupos sólo se cargaba al abrir la pestaña del calendario
+   compartido. Pero los avisos se ponen al día a los pocos segundos de abrir la
+   app, con el estudiante todavía en "Materias": ahí la lista estaba vacía y se
+   guardaba vacía, borrando la buena de la vez anterior. Resultado: los avisos
+   de los calendarios compartidos no llegaban nunca. */
+function anotarMisGrupos(ids){
+  const nuevos = [...new Set(ids)].slice(0,10);
+  if (JSON.stringify(nuevos) === JSON.stringify(ST.misGrupos || [])) return;
+  ST.misGrupos = nuevos; guardar();
+}
+
+/* Los identificadores de sus grupos, sin depender de haber abierto esa pestaña.
+   Si no se pueden consultar —sin señal, por ejemplo— se devuelve lo último que
+   se supo, que es mejor que decir "ninguno" y dejarlo sin avisos. */
+async function idsDeGrupos(){
+  if (grupos.length) { const ids = grupos.map(g => g.id); anotarMisGrupos(ids); return ids; }
+  if (!usuario || !FB) return ST.misGrupos || [];
+  try {
+    const q = FB.F.query(FB.F.collection(FB.db,"grupos"),
+                         FB.F.where("miembros","array-contains",usuario.uid));
+    const snap = await FB.F.getDocs(q);
+    const ids = snap.docs.map(d => d.id);
+    anotarMisGrupos(ids);
+    return ids;
+  } catch(_){ return ST.misGrupos || []; }
 }
 
 async function grCargarEventos(){
