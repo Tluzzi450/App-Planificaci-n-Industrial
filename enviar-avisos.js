@@ -14,7 +14,7 @@
  *   FIREBASE_CUENTA  el JSON de la cuenta de servicio de Firebase
  */
 const webpush = require("web-push");
-const { initializeApp, cert } = require("firebase-admin/app");
+const { initializeApp, cert, deleteApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 
 const AVISOS = [5, 2, 1];          // días antes del examen
@@ -74,6 +74,17 @@ async function eventosDeGrupo(db, gid, cache){
   return datos;
 }
 
+/* Ningún envío puede colgar el proceso: si una dirección de push deja de
+   responder, sin esto la tarea se queda esperando para siempre. */
+const TIEMPO_MAX = Number(process.env.AVISOS_TIMEOUT_MS) || 20000;
+function conLimite(promesa, ms, queEs){
+  return Promise.race([promesa, new Promise((_, no) =>
+    setTimeout(() => no(Object.assign(new Error(`${queEs}: no respondió en ${ms/1000}s`),
+                                      { esDemora: true })), ms))]);
+}
+
+let app = null;
+
 async function main(){
   const faltan = ["VAPID_PUBLICA","VAPID_PRIVADA","VAPID_CONTACTO","FIREBASE_CUENTA"]
     .filter(k => !process.env[k]);
@@ -87,7 +98,7 @@ async function main(){
     process.env.VAPID_PUBLICA,
     process.env.VAPID_PRIVADA);
 
-  initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_CUENTA)) });
+  app = initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_CUENTA)) });
   const db = getFirestore();
 
   const snap = await db.collection("avisos").get();
@@ -143,7 +154,8 @@ async function main(){
       for (const aviso of pendientes){
         if (SECO){ console.log(`  [seco] ${doc.id.slice(0,6)}…/${destino.ref.id.slice(0,6)}… → ${aviso.titulo} · ${aviso.cuerpo}`); enviados++; continue; }
         try {
-          await webpush.sendNotification(destino.sub, JSON.stringify(aviso));
+          await conLimite(webpush.sendNotification(destino.sub, JSON.stringify(aviso)),
+                          TIEMPO_MAX, "el servicio de notificaciones");
           enviados++;
         } catch(e){
           /* 404 y 410 significan que esa suscripción ya no existe: el navegador
@@ -154,7 +166,9 @@ async function main(){
             limpiados++;
             break;                        // el resto de los avisos de ESTE aparato sobra
           }
-          console.error(`  error con ${doc.id.slice(0,6)}…:`, e.statusCode || e.message);
+          // una demora no es una suscripción muerta: se deja para mañana
+          console.error(`  ${e.esDemora?"demora":"error"} con ${doc.id.slice(0,6)}…:`,
+                        e.statusCode || e.message);
           fallidos++;
         }
       }
@@ -164,4 +178,18 @@ async function main(){
   console.log(`Enviados: ${enviados} (${deGrupo} de calendarios compartidos) · aparatos dados de baja: ${limpiados} · fallos: ${fallidos}`);
 }
 
-main().catch(e => { console.error("Falló el envío:", e); process.exit(1); });
+/* ---- por qué hace falta cerrar a mano ----
+   firebase-admin deja abiertas sus conexiones gRPC, así que cuando main()
+   termina el proceso NO se muere: queda vivo sin hacer nada. En GitHub Actions
+   eso significa que la tarea sigue corriendo hasta agotar el tiempo máximo y la
+   plataforma la cancela: el run aparece como "cancelled" aunque los avisos se
+   hayan mandado todos. Cerrar la app libera esas conexiones y el proceso
+   termina solo. */
+async function cerrar(codigo){
+  try { if (app) await conLimite(deleteApp(app), 10000, "el cierre de Firebase"); }
+  catch(e){ console.error("No se pudo cerrar Firebase:", e.message); }
+  process.exit(codigo);
+}
+
+main().then(() => cerrar(0))
+      .catch(e => { console.error("Falló el envío:", e); cerrar(1); });
