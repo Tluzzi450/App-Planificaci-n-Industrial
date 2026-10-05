@@ -16,6 +16,12 @@ on:
 jobs:
   enviar:
     runs-on: ubuntu-latest
+    # Mandar los avisos lleva segundos. Sin este tope, una tarea que se cuelga
+    # sigue corriendo hasta el máximo de GitHub —seis horas— y recién ahí la
+    # plataforma la cancela: por eso llegan correos de "All jobs were cancelled"
+    # mucho después, y cuesta darse cuenta de qué pasó. Con diez minutos, si algo
+    # se traba se entera uno enseguida.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -33,4 +39,3 @@ jobs:
           VAPID_CONTACTO: ${{ secrets.VAPID_CONTACTO }}
           FIREBASE_CUENTA: ${{ secrets.FIREBASE_CUENTA }}
         run: node enviar-avisos.js
-
