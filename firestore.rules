@@ -2,44 +2,213 @@ rules_version = '2';
 
 /* Reglas de seguridad de Firestore para el Planificador.
  *
- * Sin estas reglas, cualquiera podría leer el progreso de todos los estudiantes.
  * Copialas tal cual en la consola de Firebase:
  *     Firestore Database -> Reglas -> pegar -> Publicar
  *
- * La app guarda un único documento por estudiante, en usuarios/{uid}, así:
- *     { version: 1, datos: "<JSON como texto>", actualizado: "...", dispositivo: "..." }
+ * Tres cosas guardadas acá, y ninguna deja ver nada de las otras:
+ *
+ *   usuarios/{uid}          El progreso personal. Sólo su dueño, siempre.
+ *   grupos/{gid}            Un calendario compartido de hasta 10 personas.
+ *                           SÓLO lo leen sus miembros: no hay forma de listar
+ *                           grupos ajenos ni de espiar uno al que no pertenecés.
+ *   invitaciones/{codigo}   El puente para poder entrar con un código. Es un
+ *                           documento minúsculo, cuyo identificador ES el propio
+ *                           código, y adentro sólo dice a qué grupo apunta.
+ *
+ * Por qué existe "invitaciones": para sumarse a un grupo hay que encontrarlo a
+ * partir del código, y buscar dentro de una colección obligaría a permitir leer
+ * grupos ajenos. En cambio, pedir UN documento por su identificador exacto no
+ * requiere ese permiso. Quien tiene el código llega a la invitación, y de ahí al
+ * grupo; quien no lo tiene no puede listar nada, porque adivinar un código de
+ * ocho caracteres es inviable.
  */
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Las funciones tienen que vivir adentro del match, no en la raíz del archivo.
-    function esDuenio(uid) {
-      // request.auth.uid lo completa Firebase al validar el token de sesión:
+    function autenticado() {
+      // request.auth lo completa Firebase al validar el token de sesión:
       // no se puede falsear desde el navegador.
-      return request.auth != null && request.auth.uid == uid;
+      return request.auth != null;
+    }
+    function esDuenio(uid) {
+      return autenticado() && request.auth.uid == uid;
     }
 
-    function soloCamposEsperados() {
-      return request.resource.data.keys().hasOnly(['version', 'datos', 'actualizado', 'dispositivo'])
-          && request.resource.data.version is int
-          && request.resource.data.datos is string;
-    }
-
-    // El progreso de una carrera entera son unos pocos kilobytes. Un techo de
-    // 512 KB deja margen de sobra y evita que usen el proyecto como depósito.
-    function tamanioRazonable() {
-      return request.resource.data.datos.size() < 512 * 1024;
-    }
-
+    // ---------------------------------------------------------------- progreso personal
     match /usuarios/{uid} {
+      function soloCamposEsperados() {
+        return request.resource.data.keys().hasOnly(['version', 'datos', 'actualizado', 'dispositivo'])
+            && request.resource.data.version is int
+            && request.resource.data.datos is string;
+      }
+      function tamanioRazonable() {
+        return request.resource.data.datos.size() < 512 * 1024;
+      }
       allow read:  if esDuenio(uid);
       allow write: if esDuenio(uid) && soloCamposEsperados() && tamanioRazonable();
     }
 
-    /* Todo lo demás queda cerrado. Firestore ya deniega por omisión; esto lo deja
-       escrito, para que una colección agregada más adelante no quede abierta sin
-       que nadie lo note. (Las reglas se combinan con OR, así que esto no pisa el
-       permiso de arriba.) */
+    /* La colección 'avisos' vivía acá: guardaba una suscripción de notificaciones
+       por aparato y las fechas de los exámenes, para el proceso que mandaba los
+       avisos al celular. Ese módulo se quitó de la app, así que la colección ya
+       no se escribe ni se lee desde ningún lado y queda cerrada como todo lo
+       demás por la regla general del final. */
+
+    // ---------------------------------------------------------------- invitaciones
+    /* El identificador del documento es el código (por ejemplo "JVQ3-DDHJ").
+       Adentro sólo hay { grupo: "<id>" }: ni nombres, ni miembros, ni eventos.
+       Se puede leer con el código en la mano, y nada más. */
+    match /invitaciones/{codigo} {
+      allow get: if autenticado();
+      allow list: if false;                 // nadie puede recorrer los códigos
+
+      allow create: if autenticado()
+                    && request.resource.data.keys().hasOnly(['grupo'])
+                    && request.resource.data.grupo is string;
+      allow update: if false;               // un código no se reasigna
+      // Sólo quien creó el grupo puede dar de baja su invitación.
+      allow delete: if autenticado()
+                    && get(/databases/$(database)/documents/grupos/$(resource.data.grupo)).data.creador == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------------- calendarios compartidos
+    match /grupos/{gid} {
+
+      function grupoActual() {
+        return get(/databases/$(database)/documents/grupos/$(gid)).data;
+      }
+      function esMiembro() {
+        return autenticado() && request.auth.uid in grupoActual().miembros;
+      }
+
+      function datosValidos() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['nombre', 'codigo', 'creador', 'miembros', 'nombres', 'creado', 'actualizado', 'avatar'])
+            && d.nombre is string && d.nombre.size() > 0 && d.nombre.size() <= 60
+            && d.codigo is string && d.codigo.size() >= 6 && d.codigo.size() <= 12
+            && d.creador is string
+            && d.miembros is list && d.miembros.size() >= 1 && d.miembros.size() <= 10
+            && d.nombres is map && d.nombres.size() <= 10;
+      }
+
+      /* LEER un grupo puntual: los miembros siempre; y además, quien llega con
+         un código válido, porque para poder sumarse necesita ver a qué grupo
+         apunta y si queda lugar. Tener el código es justamente la prueba de que
+         fue invitado: sin él no se llega a este punto. */
+      allow get: if autenticado() && (
+           request.auth.uid in resource.data.miembros
+        || exists(/databases/$(database)/documents/invitaciones/$(resource.data.codigo))
+      );
+
+      /* LISTAR: se permite únicamente si la consulta filtra por uno mismo, que
+         es como la app pide "mis grupos". Una consulta sin ese filtro falla
+         entera, así que no hay forma de obtener el listado general. */
+      allow list: if autenticado()
+                  && resource.data.miembros.hasAny([request.auth.uid]);
+
+      allow create: if autenticado()
+                    && datosValidos()
+                    && request.resource.data.creador == request.auth.uid
+                    && request.resource.data.miembros == [request.auth.uid];
+
+      /* ACTUALIZAR: dos casos legítimos.
+         a) un miembro edita el grupo (renombrarlo, o irse);
+         b) alguien que llegó con el código se agrega a sí mismo, sin tocar nada
+            más y sin pasar de 10. Para esto necesita poder escribir aunque
+            todavía no sea miembro; por eso este caso no exige esMiembro(). */
+      allow update: if datosValidos() && (
+           ( esMiembro()
+             && request.resource.data.creador == resource.data.creador
+             && request.resource.data.codigo  == resource.data.codigo )
+        || ( autenticado()
+             && !(request.auth.uid in resource.data.miembros)
+             && request.resource.data.miembros == resource.data.miembros.concat([request.auth.uid])
+             && request.resource.data.miembros.size() <= 10
+             && request.resource.data.creador == resource.data.creador
+             && request.resource.data.codigo  == resource.data.codigo
+             && request.resource.data.nombre  == resource.data.nombre
+             && request.resource.data.get('avatar', {}) == resource.data.get('avatar', {}) )
+      );
+
+      allow delete: if autenticado() && resource.data.creador == request.auth.uid;
+
+      // ------------------------------------------------------------ eventos del grupo
+      match /eventos/{eid} {
+
+        function padre() {
+          return get(/databases/$(database)/documents/grupos/$(gid)).data;
+        }
+        function miembroDelGrupo() {
+          return autenticado() && request.auth.uid in padre().miembros;
+        }
+        function eventoValido() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['titulo', 'fecha', 'hora', 'tipo', 'detalle', 'autor', 'autorNombre', 'creado', 'actualizado'])
+              && d.titulo is string && d.titulo.size() > 0 && d.titulo.size() <= 120
+              && d.fecha is string && d.fecha.size() == 10
+              && d.autor is string
+              && d.detalle.size() <= 500;
+        }
+
+        // El contenido real del calendario: sólo miembros, para leer y escribir.
+        allow read: if miembroDelGrupo();
+
+        allow create: if miembroDelGrupo() && eventoValido()
+                      && request.resource.data.autor == request.auth.uid;
+
+        // Cada uno edita y borra lo suyo; quien creó el grupo puede con todo.
+        allow update: if miembroDelGrupo() && eventoValido()
+                      && ( resource.data.autor == request.auth.uid
+                        || padre().creador == request.auth.uid )
+                      && request.resource.data.autor == resource.data.autor;
+
+        allow delete: if miembroDelGrupo()
+                      && ( resource.data.autor == request.auth.uid
+                        || padre().creador == request.auth.uid );
+
+        /* Comentarios de un evento. Mismo criterio que los eventos: los ven
+           sólo los miembros, y cada uno borra lo suyo (el dueño del grupo,
+           todo). Un comentario no se edita: si está mal, se borra y se escribe
+           de nuevo, así nadie puede cambiar lo que ya leyeron los demás. */
+        match /comentarios/{cid} {
+          function comentarioValido() {
+            let d = request.resource.data;
+            return d.keys().hasOnly(['texto', 'autor', 'autorNombre', 'creado'])
+                && d.texto is string && d.texto.size() > 0 && d.texto.size() <= 500
+                && d.autor is string;
+          }
+          allow read:   if miembroDelGrupo();
+          allow create: if miembroDelGrupo() && comentarioValido()
+                        && request.resource.data.autor == request.auth.uid;
+          allow update: if false;
+          allow delete: if miembroDelGrupo()
+                        && ( resource.data.autor == request.auth.uid
+                          || padre().creador == request.auth.uid );
+        }
+      }
+
+      /* Chat del grupo. Igual que los comentarios: se escribe y se borra, no se
+         edita. */
+      match /mensajes/{mid} {
+        function mensajeValido() {
+          let d = request.resource.data;
+          return d.keys().hasOnly(['texto', 'autor', 'autorNombre', 'creado'])
+              && d.texto is string && d.texto.size() > 0 && d.texto.size() <= 1000
+              && d.autor is string;
+        }
+        allow read:   if esMiembro();
+        allow create: if esMiembro() && mensajeValido()
+                      && request.resource.data.autor == request.auth.uid;
+        allow update: if false;
+        allow delete: if esMiembro()
+                      && ( resource.data.autor == request.auth.uid
+                        || grupoActual().creador == request.auth.uid );
+      }
+    }
+
+    /* Todo lo demás queda cerrado. Firestore ya deniega por omisión; esto lo
+       deja escrito para que una colección agregada más adelante no quede
+       abierta sin que nadie lo note. */
     match /{documento=**} {
       allow read, write: if false;
     }
