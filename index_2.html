@@ -351,17 +351,18 @@ html[data-tema="oscuro"] .gr-nov .it .v.baja{background:#3d1620;color:#ff9fae}
 .gr-colores button{width:30px;height:30px;border-radius:9px;border:2px solid transparent}
 .gr-colores button.activo{border-color:var(--texto)}
 /* ---------- aviso propio del grupo (no es el pin rojo personal) ---------- */
-.gr-alerta{background:var(--suave);border:1px solid var(--acento);border-left:5px solid var(--acento);
+.gr-alerta{background:#eef8dc;border:1px solid #cfe8a2;border-left:5px solid var(--verde);
   border-radius:11px;padding:11px 14px;margin-bottom:14px}
-.gr-alerta .tit{font-weight:800;color:var(--petrol);font-size:13px;margin-bottom:6px;
+.gr-alerta .tit{font-weight:800;color:var(--verde-txt);font-size:13px;margin-bottom:6px;
   display:flex;align-items:center;gap:7px}
-.gr-alerta .tit .n{background:var(--marca);color:#fff;border-radius:99px;font-size:11px;
+.gr-alerta .tit .n{background:var(--verde-txt);color:#fff;border-radius:99px;font-size:11px;
   padding:1px 8px;font-weight:800}
 .gr-alerta .it{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;font-size:12.5px;
   padding:3px 0;color:var(--texto)}
 .gr-alerta .it b{color:var(--petrol);min-width:0;overflow-wrap:anywhere}
 .gr-alerta .it .cd{margin-left:auto;font-weight:800;color:var(--petrol);white-space:nowrap}
-html[data-tema="oscuro"] .gr-alerta{background:#10323f}
+/* En oscuro el mismo verde apagado: el claro encandila sobre fondo negro. */
+html[data-tema="oscuro"] .gr-alerta{background:#1e3312;border-color:#3c5c26}
 /* ---------- comentarios y chat ---------- */
 .gr-com{margin-top:8px;flex-basis:100%;border-top:1px solid var(--linea);padding-top:7px}
 .msj{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:3px 0;flex-wrap:wrap}
@@ -835,7 +836,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.06 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.06c · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -3301,7 +3302,8 @@ function grEditarAvatar(){
 
 /* ================= AVISO DE PROXIMIDAD, PROPIO DEL GRUPO =================
    A propósito distinto del pin rojo "Inminente": otro color, otro texto, otra
-   ventana de días, y sólo dentro de esta pestaña. */
+   ventana de días, y sólo dentro de esta pestaña. El rojo del pin urge; el verde
+   de acá sólo informa. */
 const GR_DIAS_AVISO = 7;
 function grAlertaHTML(evs){
   const cerca = evs.filter(e => { const d = diasHasta(e.fecha); return d >= 0 && d <= GR_DIAS_AVISO; });
