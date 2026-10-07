@@ -1,0 +1,42 @@
+<!doctype html><meta charset="utf-8">
+<title>Semáforo del calendario compartido</title>
+<style>
+:root{--texto:#13323f;--petrol:#00455C;--blanco:#fff;--rojo:#FF2644}
+body{font-family:system-ui,sans-serif;background:#f4f8fa;padding:26px;max-width:620px;margin:0 auto}
+h2{font:800 15px system-ui;color:#00455C;margin:22px 0 10px}
+.gr-alerta{background:#f1f8ec;border:1px solid #a8d49a;border-left:5px solid #1b6b1e;
+  border-radius:11px;padding:11px 14px;margin-bottom:14px;--sem:#1b6b1e}
+.gr-alerta.sem-ambar{background:#fff8e6;border-color:#f0cd7f;border-left-color:#8a5a00;--sem:#8a5a00}
+.gr-alerta.sem-rojo{background:#3d1620;border-color:#6b2534;
+  border-left-color:#ff9fae;--sem:#ff9fae}
+.gr-alerta .tit{font-weight:800;color:var(--sem);font-size:13px;margin-bottom:6px;
+  display:flex;align-items:center;gap:7px}
+.gr-alerta .tit .n{background:var(--sem);color:#fff;border-radius:99px;font-size:12px;
+  min-width:20px;text-align:center;padding:2px 8px;font-weight:800;line-height:1.25}
+.gr-alerta .it{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;font-size:12.5px;
+  padding:3px 0;color:var(--texto)}
+.gr-alerta .it b{color:var(--petrol);min-width:0;overflow-wrap:anywhere}
+.gr-alerta .it .cd{margin-left:auto;font-weight:800;color:var(--petrol);white-space:nowrap}
+.gr-alerta .it.urg .cd{color:#b3122f}
+.gr-alerta .it.med .cd{color:#8a5a00}
+</style>
+<h2>A 7, 6 o 5 días</h2>
+<div class="gr-alerta ">
+  <div class="tit">🔔 Se acerca en el grupo <span class="n">1</span></div>
+  <div class="it"><b>Parcial de Física I</b><span>Parcial · vie 16 oct</span><span class="cd">en 6 días</span></div>
+</div><p style="font:600 12px system-ui;color:#5c7482;margin:2px 0 18px">verde: está en el horizonte</p>
+<h2>A 4 o 3 días</h2>
+<div class="gr-alerta sem-ambar">
+  <div class="tit">🔔 Se acerca en el grupo <span class="n">1</span></div>
+  <div class="it"><b>TP de Química</b><span>TP · mar 13 oct</span><span class="cd">en 4 días</span></div>
+</div><p style="font:600 12px system-ui;color:#5c7482;margin:2px 0 18px">amarillo: ya conviene ponerse</p>
+<h2>A 2 días o menos</h2>
+<div class="gr-alerta sem-rojo">
+  <div class="tit">🔔 Se acerca en el grupo <span class="n">1</span></div>
+  <div class="it"><b>Final de Álgebra</b><span>Final · jue 8 oct</span><span class="cd">mañana</span></div>
+</div><p style="font:600 12px system-ui;color:#5c7482;margin:2px 0 18px">rojo: es inminente</p>
+<h2>Mezclado — manda el más cercano</h2>
+<div class="gr-alerta sem-rojo">
+  <div class="tit">🔔 Se acerca en el grupo <span class="n">3</span></div>
+  <div class="it urg"><b>Final de Álgebra</b><span>Final · jue 8 oct</span><span class="cd">mañana</span></div><div class="it med"><b>TP de Química</b><span>TP · sáb 10 oct</span><span class="cd">en 3 días</span></div><div class="it"><b>Parcial de Física I</b><span>Parcial · vie 16 oct</span><span class="cd">en 6 días</span></div>
+</div><p style="font:600 12px system-ui;color:#5c7482;margin:2px 0 18px">el cartel va en rojo por el de mañana, y cada fila dice lo suyo</p>

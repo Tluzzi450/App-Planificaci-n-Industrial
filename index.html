@@ -351,18 +351,38 @@ html[data-tema="oscuro"] .gr-nov .it .v.baja{background:#3d1620;color:#ff9fae}
 .gr-colores button{width:30px;height:30px;border-radius:9px;border:2px solid transparent}
 .gr-colores button.activo{border-color:var(--texto)}
 /* ---------- aviso propio del grupo (no es el pin rojo personal) ---------- */
-.gr-alerta{background:#eef8dc;border:1px solid #cfe8a2;border-left:5px solid var(--verde);
-  border-radius:11px;padding:11px 14px;margin-bottom:14px}
-.gr-alerta .tit{font-weight:800;color:var(--verde-txt);font-size:13px;margin-bottom:6px;
+/* Semáforo. El color lo manda el evento MÁS cercano: si uno está a dos días, el
+   cartel entero va en rojo aunque los otros estén lejos. Los tonos no son los
+   puros de la paleta sino versiones oscurecidas, porque el número va en blanco
+   encima y sobre el ámbar puro (#FFAB00) quedaba ilegible: 1.9 a 1. */
+.gr-alerta{background:#f1f8ec;border:1px solid #a8d49a;border-left:5px solid #1b6b1e;
+  border-radius:11px;padding:11px 14px;margin-bottom:14px;--sem:#1b6b1e}
+.gr-alerta.sem-ambar{background:#fff8e6;border-color:#f0cd7f;border-left-color:#8a5a00;--sem:#8a5a00}
+.gr-alerta.sem-rojo {background:#fff0f2;border-color:#ffb9c4;border-left-color:#b3122f;--sem:#b3122f}
+.gr-alerta .tit{font-weight:800;color:var(--sem);font-size:13px;margin-bottom:6px;
   display:flex;align-items:center;gap:7px}
-.gr-alerta .tit .n{background:var(--verde-txt);color:#fff;border-radius:99px;font-size:11px;
-  padding:1px 8px;font-weight:800}
+.gr-alerta .tit .n{background:var(--sem);color:#fff;border-radius:99px;font-size:12px;
+  min-width:20px;text-align:center;padding:2px 8px;font-weight:800;line-height:1.25}
+/* la cuenta de cada evento lleva su propio color: en una lista mezclada deja ver
+   cuál es el urgente, que si no se adivina sólo por el texto */
+.gr-alerta .it.urg .cd{color:#b3122f}
+.gr-alerta .it.med .cd{color:#8a5a00}
 .gr-alerta .it{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;font-size:12.5px;
   padding:3px 0;color:var(--texto)}
 .gr-alerta .it b{color:var(--petrol);min-width:0;overflow-wrap:anywhere}
 .gr-alerta .it .cd{margin-left:auto;font-weight:800;color:var(--petrol);white-space:nowrap}
-/* En oscuro el mismo verde apagado: el claro encandila sobre fondo negro. */
-html[data-tema="oscuro"] .gr-alerta{background:#1e3312;border-color:#3c5c26}
+/* En oscuro, los mismos tres estados apagados: los claros encandilan sobre negro.
+   Acá la burbuja se da vuelta —fondo claro, número oscuro— porque un relleno
+   oscuro sobre fondo oscuro desaparece. */
+html[data-tema="oscuro"] .gr-alerta{background:#152b14;border-color:#2f5a2b;
+  border-left-color:#8fd47f;--sem:#8fd47f}
+html[data-tema="oscuro"] .gr-alerta.sem-ambar{background:#33290d;border-color:#5a4715;
+  border-left-color:#f0cd7f;--sem:#f0cd7f}
+html[data-tema="oscuro"] .gr-alerta.sem-rojo{background:#3d1620;border-color:#6b2534;
+  border-left-color:#ff9fae;--sem:#ff9fae}
+html[data-tema="oscuro"] .gr-alerta .tit .n{color:#141f14}
+html[data-tema="oscuro"] .gr-alerta .it.urg .cd{color:#ff9fae}
+html[data-tema="oscuro"] .gr-alerta .it.med .cd{color:#f0cd7f}
 /* ---------- comentarios y chat ---------- */
 .gr-com{margin-top:8px;flex-basis:100%;border-top:1px solid var(--linea);padding-top:7px}
 .msj{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:3px 0;flex-wrap:wrap}
@@ -836,7 +856,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.06c · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.07 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -3305,16 +3325,24 @@ function grEditarAvatar(){
    ventana de días, y sólo dentro de esta pestaña. El rojo del pin urge; el verde
    de acá sólo informa. */
 const GR_DIAS_AVISO = 7;
+/* Los tres tramos del semáforo, por días que faltan. */
+const GR_SEM_ROJO = 2, GR_SEM_AMBAR = 4;
+const grSemaforo = d => d <= GR_SEM_ROJO ? "rojo" : d <= GR_SEM_AMBAR ? "ambar" : "verde";
+
 function grAlertaHTML(evs){
   const cerca = evs.filter(e => { const d = diasHasta(e.fecha); return d >= 0 && d <= GR_DIAS_AVISO; });
   if (!cerca.length) return "";
+  /* Manda el más cercano: con un evento a dos días el cartel va en rojo aunque
+     los demás estén lejos. Avisar de menos sería el error caro. */
+  const minimo = Math.min(...cerca.map(e => diasHasta(e.fecha)));
+  const sem = grSemaforo(minimo);
   const it = e => {
-    const d = diasHasta(e.fecha);
-    return `<div class="it"><b>${escHTML(e.titulo)}</b>
+    const d = diasHasta(e.fecha), s = grSemaforo(d);
+    return `<div class="it${s==="rojo"?" urg":s==="ambar"?" med":""}"><b>${escHTML(e.titulo)}</b>
       <span>${GR_TIPOS[e.tipo]||"Otro"} · ${fmtFecha(e.fecha)}${e.hora?" "+e.hora:""}</span>
       <span class="cd">${d===0?"es hoy":d===1?"mañana":"en "+d+" días"}</span></div>`;
   };
-  return `<div class="gr-alerta">
+  return `<div class="gr-alerta${sem==="verde"?"":" sem-"+sem}">
     <div class="tit">🔔 Se acerca en el grupo <span class="n">${cerca.length}</span></div>
     ${cerca.map(it).join("")}</div>`;
 }
