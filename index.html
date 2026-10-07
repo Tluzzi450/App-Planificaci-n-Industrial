@@ -433,22 +433,38 @@ html[data-tema="oscuro"] .gr-alerta .it.med .cd{color:#f0cd7f}
   color:var(--verde-txt);border-radius:10px;padding:14px 18px;font-weight:700;font-size:14px;max-width:620px}
 html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:#bde08a}
 /* ---------- pin de eventos inminentes ---------- */
-.pin-caja{background:var(--blanco);border:1px solid var(--rojo);border-left:5px solid var(--rojo);
-  border-radius:11px;padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra)}
-.pin-cab{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--rojo);font-size:13px;margin-bottom:7px}
-.pin-cab .cont{background:var(--rojo);color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:800}
+/* Mismo semáforo que el cartel del calendario compartido, con los mismos tonos
+   oscurecidos: el número va en blanco encima y sobre los colores puros de la
+   paleta no se leía. Acá no hay tramo verde: el pin sólo muestra lo que está a
+   cuatro días o menos, así que nada de lo que aparece está lejos. */
+.pin-caja{background:var(--blanco);border:1px solid #ffb9c4;border-left:5px solid #b3122f;
+  border-radius:11px;padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra);--sem:#b3122f}
+.pin-caja.sem-ambar{border-color:#f0cd7f;border-left-color:#8a5a00;--sem:#8a5a00}
+.pin-cab{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--sem);font-size:13px;margin-bottom:7px}
+.pin-cab .cont{background:var(--sem);color:#fff;border-radius:99px;font-size:12px;
+  min-width:20px;text-align:center;padding:2px 8px;font-weight:800;line-height:1.25}
 .pin-it{display:flex;align-items:baseline;gap:9px;padding:5px 0;border-top:1px solid var(--linea);flex-wrap:wrap}
 .pin-it:first-of-type{border-top:none}
 .pin-it .q{font-weight:700;font-size:13.5px;color:var(--petrol);margin-right:auto;
   min-width:0;flex:1 1 160px;overflow-wrap:anywhere}
-.pin-it .c{font-size:12px;font-weight:800;color:var(--rojo);white-space:nowrap}
+/* cada renglón con su propia urgencia: en una lista mezclada deja ver cuál
+   aprieta y cuál todavía no */
+.pin-it .c{font-size:12px;font-weight:800;color:#8a5a00;white-space:nowrap}
+.pin-it.urg .c{color:#b3122f}
 .pin-it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 .pin-it .et{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;background:var(--suave);color:var(--muted)}
-html[data-tema="oscuro"] .pin-caja{background:#2b1319}
+html[data-tema="oscuro"] .pin-caja{background:#2b1319;border-color:#6b2534;
+  border-left-color:#ff9fae;--sem:#ff9fae}
+html[data-tema="oscuro"] .pin-caja.sem-ambar{background:#2b2208;border-color:#5a4715;
+  border-left-color:#f0cd7f;--sem:#f0cd7f}
+/* la burbuja se da vuelta: un relleno oscuro sobre fondo oscuro desaparece */
+html[data-tema="oscuro"] .pin-cab .cont{color:#241016}
+html[data-tema="oscuro"] .pin-it .c{color:#f0cd7f}
+html[data-tema="oscuro"] .pin-it.urg .c{color:#ff9fae}
 /* el encabezado entero es el botón de plegar: en el celular una flecha sola
    sería un blanco muy chico para el dedo */
 .pin-cab{width:100%;background:none;border:none;text-align:left;cursor:pointer;padding:0}
-.pin-cab:hover .fl{color:var(--rojo)}
+.pin-cab:hover .fl{color:var(--sem)}
 .pin-cab .fl{margin-left:auto;font-size:11px;color:var(--muted);transition:transform .18s;
   display:inline-block;line-height:1}
 .pin-caja.plegada .pin-cab{margin-bottom:0}
@@ -856,7 +872,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.07 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.07b · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2239,6 +2255,13 @@ const CALENDARIO_ACAD = [
    empiece, y se queda fijado hasta que termina (no hasta que empieza). */
 const DIAS_PIN = 4;
 
+/* Los tramos del semáforo, en días que faltan. Los comparten el pin de la agenda
+   y el cartel del calendario compartido, para que un rojo signifique lo mismo en
+   los dos lados. El pin no llega al verde porque sólo muestra lo que está a
+   DIAS_PIN o menos. */
+const SEM_ROJO = 2, SEM_AMBAR = 4;
+const semaforo = d => d <= SEM_ROJO ? "rojo" : d <= SEM_AMBAR ? "ambar" : "verde";
+
 /* Cada entrada con sus días calculados. ini<=0 significa que ya arrancó; fin<0,
    que terminó. Los de un solo día tienen ini===fin. */
 function eventosAcad(){
@@ -2286,12 +2309,15 @@ function renderPin(){
     .sort((a,b)=>a.ini-b.ini);
   if(!acad.length && !propios.length){ cont.innerHTML=""; return; }
   const total=acad.length+propios.length;
-  const itemProp = e => `<div class="pin-it">
+  /* Los eventos de la facultad pueden estar en curso: ini<=0. Se cuentan como 0,
+     que es lo más urgente que hay. */
+  const urg = d => Math.max(0, d) <= SEM_ROJO ? " urg" : "";
+  const itemProp = e => `<div class="pin-it${urg(e.ini)}">
     <span class="et">Tuyo</span>
     <span class="q">${escHTML(nombreMateriaEx(e))} · ${TIPOS_EX[e.tipo]||"Examen"}</span>
     <span class="f">${fmtCorto(e.fecha)}${e.hora?" · "+e.hora+" hs":""}</span>
     <span class="c">${e.ini===0?"HOY":e.ini===1?"mañana":"en "+e.ini+" días"}</span></div>`;
-  const itemAcad = e => `<div class="pin-it">
+  const itemAcad = e => `<div class="pin-it${urg(e.ini)}">
     <span class="et">${e.k==="feriado"?"No laborable":"Facultad"}</span>
     <span class="q">${escHTML(e.t)}</span>
     <span class="f">${rangoTexto(e)}</span>
@@ -2305,7 +2331,11 @@ function renderPin(){
   const resumen = plegado
     ? `<span class="resumen">${escHTML(propios.length ? nombreMateriaEx(propios[0]) : acad[0].t)}${total>1?` y ${total-1} más`:""}</span>`
     : "";
-  cont.innerHTML=`<div class="pin-caja${plegado?" plegada":""}">
+  /* El color lo manda el más cercano, igual que en el calendario compartido.
+     Sin tramo verde: con DIAS_PIN en 4, acá nada llega a estar lejos. */
+  const minimo = Math.max(0, Math.min(...[...propios, ...acad].map(e => e.ini)));
+  const sem = minimo <= SEM_ROJO ? "" : " sem-ambar";
+  cont.innerHTML=`<div class="pin-caja${sem}${plegado?" plegada":""}">
     <button class="pin-cab" id="pinPlegar" aria-expanded="${!plegado}"
       title="${plegado?"Mostrar":"Ocultar"} los eventos inminentes">
       📌 Inminente <span class="cont">${total}</span>${resumen}
@@ -3325,19 +3355,15 @@ function grEditarAvatar(){
    ventana de días, y sólo dentro de esta pestaña. El rojo del pin urge; el verde
    de acá sólo informa. */
 const GR_DIAS_AVISO = 7;
-/* Los tres tramos del semáforo, por días que faltan. */
-const GR_SEM_ROJO = 2, GR_SEM_AMBAR = 4;
-const grSemaforo = d => d <= GR_SEM_ROJO ? "rojo" : d <= GR_SEM_AMBAR ? "ambar" : "verde";
-
 function grAlertaHTML(evs){
   const cerca = evs.filter(e => { const d = diasHasta(e.fecha); return d >= 0 && d <= GR_DIAS_AVISO; });
   if (!cerca.length) return "";
   /* Manda el más cercano: con un evento a dos días el cartel va en rojo aunque
      los demás estén lejos. Avisar de menos sería el error caro. */
   const minimo = Math.min(...cerca.map(e => diasHasta(e.fecha)));
-  const sem = grSemaforo(minimo);
+  const sem = semaforo(minimo);
   const it = e => {
-    const d = diasHasta(e.fecha), s = grSemaforo(d);
+    const d = diasHasta(e.fecha), s = semaforo(d);
     return `<div class="it${s==="rojo"?" urg":s==="ambar"?" med":""}"><b>${escHTML(e.titulo)}</b>
       <span>${GR_TIPOS[e.tipo]||"Otro"} · ${fmtFecha(e.fecha)}${e.hora?" "+e.hora:""}</span>
       <span class="cd">${d===0?"es hoy":d===1?"mañana":"en "+d+" días"}</span></div>`;
