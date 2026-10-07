@@ -350,39 +350,6 @@ html[data-tema="oscuro"] .gr-nov .it .v.baja{background:#3d1620;color:#ff9fae}
 .gr-colores{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
 .gr-colores button{width:30px;height:30px;border-radius:9px;border:2px solid transparent}
 .gr-colores button.activo{border-color:var(--texto)}
-/* ---------- aviso propio del grupo (no es el pin rojo personal) ---------- */
-/* Semáforo. El color lo manda el evento MÁS cercano: si uno está a dos días, el
-   cartel entero va en rojo aunque los otros estén lejos. Los tonos no son los
-   puros de la paleta sino versiones oscurecidas, porque el número va en blanco
-   encima y sobre el ámbar puro (#FFAB00) quedaba ilegible: 1.9 a 1. */
-.gr-alerta{background:#f1f8ec;border:1px solid #a8d49a;border-left:5px solid #1b6b1e;
-  border-radius:11px;padding:11px 14px;margin-bottom:14px;--sem:#1b6b1e}
-.gr-alerta.sem-ambar{background:#fff8e6;border-color:#f0cd7f;border-left-color:#8a5a00;--sem:#8a5a00}
-.gr-alerta.sem-rojo {background:#fff0f2;border-color:#ffb9c4;border-left-color:#b3122f;--sem:#b3122f}
-.gr-alerta .tit{font-weight:800;color:var(--sem);font-size:13px;margin-bottom:6px;
-  display:flex;align-items:center;gap:7px}
-.gr-alerta .tit .n{background:var(--sem);color:#fff;border-radius:99px;font-size:12px;
-  min-width:20px;text-align:center;padding:2px 8px;font-weight:800;line-height:1.25}
-/* la cuenta de cada evento lleva su propio color: en una lista mezclada deja ver
-   cuál es el urgente, que si no se adivina sólo por el texto */
-.gr-alerta .it.urg .cd{color:#b3122f}
-.gr-alerta .it.med .cd{color:#8a5a00}
-.gr-alerta .it{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;font-size:12.5px;
-  padding:3px 0;color:var(--texto)}
-.gr-alerta .it b{color:var(--petrol);min-width:0;overflow-wrap:anywhere}
-.gr-alerta .it .cd{margin-left:auto;font-weight:800;color:var(--petrol);white-space:nowrap}
-/* En oscuro, los mismos tres estados apagados: los claros encandilan sobre negro.
-   Acá la burbuja se da vuelta —fondo claro, número oscuro— porque un relleno
-   oscuro sobre fondo oscuro desaparece. */
-html[data-tema="oscuro"] .gr-alerta{background:#152b14;border-color:#2f5a2b;
-  border-left-color:#8fd47f;--sem:#8fd47f}
-html[data-tema="oscuro"] .gr-alerta.sem-ambar{background:#33290d;border-color:#5a4715;
-  border-left-color:#f0cd7f;--sem:#f0cd7f}
-html[data-tema="oscuro"] .gr-alerta.sem-rojo{background:#3d1620;border-color:#6b2534;
-  border-left-color:#ff9fae;--sem:#ff9fae}
-html[data-tema="oscuro"] .gr-alerta .tit .n{color:#141f14}
-html[data-tema="oscuro"] .gr-alerta .it.urg .cd{color:#ff9fae}
-html[data-tema="oscuro"] .gr-alerta .it.med .cd{color:#f0cd7f}
 /* ---------- comentarios y chat ---------- */
 .gr-com{margin-top:8px;flex-basis:100%;border-top:1px solid var(--linea);padding-top:7px}
 .msj{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:3px 0;flex-wrap:wrap}
@@ -433,13 +400,13 @@ html[data-tema="oscuro"] .gr-alerta .it.med .cd{color:#f0cd7f}
   color:var(--verde-txt);border-radius:10px;padding:14px 18px;font-weight:700;font-size:14px;max-width:620px}
 html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:#bde08a}
 /* ---------- pin de eventos inminentes ---------- */
-/* Mismo semáforo que el cartel del calendario compartido, con los mismos tonos
-   oscurecidos: el número va en blanco encima y sobre los colores puros de la
-   paleta no se leía. Acá no hay tramo verde: el pin sólo muestra lo que está a
-   cuatro días o menos, así que nada de lo que aparece está lejos. */
+/* Semáforo del pin, que ahora es el único aviso: lo personal, lo de la facultad
+   y lo de los calendarios compartidos. Los tonos son versiones oscurecidas de la
+   paleta porque el número va en blanco encima y sobre los puros no se leía. */
 .pin-caja{background:var(--blanco);border:1px solid #ffb9c4;border-left:5px solid #b3122f;
   border-radius:11px;padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra);--sem:#b3122f}
 .pin-caja.sem-ambar{border-color:#f0cd7f;border-left-color:#8a5a00;--sem:#8a5a00}
+.pin-caja.sem-verde{border-color:#a8d49a;border-left-color:#1b6b1e;--sem:#1b6b1e}
 .pin-cab{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--sem);font-size:13px;margin-bottom:7px}
 .pin-cab .cont{background:var(--sem);color:#fff;border-radius:99px;font-size:12px;
   min-width:20px;text-align:center;padding:2px 8px;font-weight:800;line-height:1.25}
@@ -449,17 +416,26 @@ html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:
   min-width:0;flex:1 1 160px;overflow-wrap:anywhere}
 /* cada renglón con su propia urgencia: en una lista mezclada deja ver cuál
    aprieta y cuál todavía no */
-.pin-it .c{font-size:12px;font-weight:800;color:#8a5a00;white-space:nowrap}
+.pin-it .c{font-size:12px;font-weight:800;color:#1b6b1e;white-space:nowrap}
+.pin-it.med .c{color:#8a5a00}
 .pin-it.urg .c{color:#b3122f}
 .pin-it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
 .pin-it .et{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;background:var(--suave);color:var(--muted)}
+/* la del grupo se distingue de "Tuyo" y "Facultad": lleva el nombre del grupo,
+   que es texto variable, y conviene que se lea como una cosa distinta */
+.pin-it .et-gr{background:#e6eef2;color:var(--petrol);max-width:120px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
 html[data-tema="oscuro"] .pin-caja{background:#2b1319;border-color:#6b2534;
   border-left-color:#ff9fae;--sem:#ff9fae}
 html[data-tema="oscuro"] .pin-caja.sem-ambar{background:#2b2208;border-color:#5a4715;
   border-left-color:#f0cd7f;--sem:#f0cd7f}
+html[data-tema="oscuro"] .pin-caja.sem-verde{background:#152b14;border-color:#2f5a2b;
+  border-left-color:#8fd47f;--sem:#8fd47f}
+html[data-tema="oscuro"] .pin-it .et-gr{background:#24404c;color:#cfe3ec}
 /* la burbuja se da vuelta: un relleno oscuro sobre fondo oscuro desaparece */
 html[data-tema="oscuro"] .pin-cab .cont{color:#241016}
-html[data-tema="oscuro"] .pin-it .c{color:#f0cd7f}
+html[data-tema="oscuro"] .pin-it .c{color:#8fd47f}
+html[data-tema="oscuro"] .pin-it.med .c{color:#f0cd7f}
 html[data-tema="oscuro"] .pin-it.urg .c{color:#ff9fae}
 /* el encabezado entero es el botón de plegar: en el celular una flecha sola
    sería un blanco muy chico para el dedo */
@@ -872,7 +848,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.07b · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.07c · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2253,13 +2229,18 @@ const CALENDARIO_ACAD = [
 
 /* Un evento se fija con el pin cuando falta este número de días o menos para que
    empiece, y se queda fijado hasta que termina (no hasta que empieza). */
-const DIAS_PIN = 4;
+/* Una semana. Era de 4 cuando el pin sólo tenía lo personal y el calendario
+   compartido avisaba aparte con su propia ventana de 7; al unificarse los dos
+   en el pin, se queda con la más amplia para no perder nada. */
+const DIAS_PIN = 7;
 
-/* Los tramos del semáforo, en días que faltan. Los comparten el pin de la agenda
-   y el cartel del calendario compartido, para que un rojo signifique lo mismo en
-   los dos lados. El pin no llega al verde porque sólo muestra lo que está a
-   DIAS_PIN o menos. */
+/* Los tramos del semáforo, en días que faltan. El pin es el único aviso de la
+   app, así que acá se define de una vez qué es urgente. */
 const SEM_ROJO = 2, SEM_AMBAR = 4;
+/* Ventana de los contadores del calendario compartido: la burbuja de la solapa y
+   el número de cada grupo. Va igual que DIAS_PIN para que no digan cosas
+   distintas, pero se declara aparte porque cuentan, no avisan. */
+const GR_DIAS_AVISO = 7;
 const semaforo = d => d <= SEM_ROJO ? "rojo" : d <= SEM_AMBAR ? "ambar" : "verde";
 
 /* Cada entrada con sus días calculados. ini<=0 significa que ya arrancó; fin<0,
@@ -2298,23 +2279,42 @@ function filaAcadHTML(e){
    propósito: la idea es justamente que quede hasta que el evento termine. */
 function renderPin(){
   const cont=$("#pinEventos"); if(!cont) return;
-  /* En el calendario compartido no va: esa pestaña tiene su propio aviso, y
-     mezclar lo del grupo con lo personal es justamente lo que no se quiere. */
-  if (vista === "compartido"){ cont.innerHTML=""; return; }
+  /* Ahora también va en el calendario compartido: el pin es el único aviso y
+     esconderlo justo ahí dejaría esa pestaña sin nada. */
   const acad=acadFijados();
+  /* Los eventos de los grupos, sin repetir el mismo si está en más de uno. */
+  const vistos=new Set();
+  const grup=(grEventosTodos||[])
+    .filter(e=>e&&typeof e.fecha==="string")
+    .map(e=>({...e, ini:diasHasta(e.fecha)}))
+    .filter(e=>{
+      if (e.ini<0 || e.ini>DIAS_PIN) return false;
+      const k=e.fecha+"|"+(e.titulo||"");
+      if (vistos.has(k)) return false;
+      vistos.add(k); return true;
+    })
+    .sort((a,b)=>a.ini-b.ini);
   const propios=(ST.examenes||[])
     .filter(e=>e&&typeof e.fecha==="string")
     .map(e=>({...e, ini:diasHasta(e.fecha)}))
     .filter(e=>e.ini>=0 && e.ini<=DIAS_PIN)
     .sort((a,b)=>a.ini-b.ini);
-  if(!acad.length && !propios.length){ cont.innerHTML=""; return; }
-  const total=acad.length+propios.length;
+  if(!acad.length && !propios.length && !grup.length){ cont.innerHTML=""; return; }
+  const total=acad.length+propios.length+grup.length;
   /* Los eventos de la facultad pueden estar en curso: ini<=0. Se cuentan como 0,
      que es lo más urgente que hay. */
-  const urg = d => Math.max(0, d) <= SEM_ROJO ? " urg" : "";
+  const urg = d => { const s = semaforo(Math.max(0, d));
+    return s === "rojo" ? " urg" : s === "ambar" ? " med" : ""; };
   const itemProp = e => `<div class="pin-it${urg(e.ini)}">
     <span class="et">Tuyo</span>
     <span class="q">${escHTML(nombreMateriaEx(e))} · ${TIPOS_EX[e.tipo]||"Examen"}</span>
+    <span class="f">${fmtCorto(e.fecha)}${e.hora?" · "+e.hora+" hs":""}</span>
+    <span class="c">${e.ini===0?"HOY":e.ini===1?"mañana":"en "+e.ini+" días"}</span></div>`;
+  /* La etiqueta lleva el nombre del grupo: con dos grupos abiertos, saber de
+     cuál viene cada cosa importa tanto como la fecha. */
+  const itemGrup = e => `<div class="pin-it${urg(e.ini)}">
+    <span class="et et-gr" title="Evento del calendario compartido">${escHTML((e.grupo||"Grupo").slice(0,18))}</span>
+    <span class="q">${escHTML(e.titulo||"Evento")} · ${GR_TIPOS[e.tipo]||"Otro"}</span>
     <span class="f">${fmtCorto(e.fecha)}${e.hora?" · "+e.hora+" hs":""}</span>
     <span class="c">${e.ini===0?"HOY":e.ini===1?"mañana":"en "+e.ini+" días"}</span></div>`;
   const itemAcad = e => `<div class="pin-it${urg(e.ini)}">
@@ -2325,22 +2325,26 @@ function renderPin(){
   /* Plegado: se recuerda entre sesiones, pero si aparece algo nuevo e inminente
      se vuelve a abrir solo. Si no, alguien que lo cierra hoy no se enteraría
      nunca más de un parcial, que es justo lo que el pin tiene que evitar. */
-  const firma = [...propios.map(e=>"e"+e.id), ...acad.map(e=>e.d+e.t)].join("|");
+  const firma = [...propios.map(e=>"e"+e.id), ...grup.map(e=>"g"+e.fecha+e.titulo),
+                 ...acad.map(e=>e.d+e.t)].join("|");
   if (ST.pinFirma !== firma){ ST.pinPlegado = false; ST.pinFirma = firma; guardar(); }
   const plegado = !!ST.pinPlegado;
+  const primero = propios.length ? nombreMateriaEx(propios[0])
+                : grup.length    ? (grup[0].titulo||"Evento")
+                : acad[0].t;
   const resumen = plegado
-    ? `<span class="resumen">${escHTML(propios.length ? nombreMateriaEx(propios[0]) : acad[0].t)}${total>1?` y ${total-1} más`:""}</span>`
+    ? `<span class="resumen">${escHTML(primero)}${total>1?` y ${total-1} más`:""}</span>`
     : "";
   /* El color lo manda el más cercano, igual que en el calendario compartido.
      Sin tramo verde: con DIAS_PIN en 4, acá nada llega a estar lejos. */
-  const minimo = Math.max(0, Math.min(...[...propios, ...acad].map(e => e.ini)));
-  const sem = minimo <= SEM_ROJO ? "" : " sem-ambar";
+  const minimo = Math.max(0, Math.min(...[...propios, ...grup, ...acad].map(e => e.ini)));
+  const sem = minimo <= SEM_ROJO ? "" : minimo <= SEM_AMBAR ? " sem-ambar" : " sem-verde";
   cont.innerHTML=`<div class="pin-caja${sem}${plegado?" plegada":""}">
     <button class="pin-cab" id="pinPlegar" aria-expanded="${!plegado}"
       title="${plegado?"Mostrar":"Ocultar"} los eventos inminentes">
       📌 Inminente <span class="cont">${total}</span>${resumen}
       <span class="fl">▼</span></button>
-    ${propios.map(itemProp).join("")}${acad.map(itemAcad).join("")}
+    ${propios.map(itemProp).join("")}${grup.map(itemGrup).join("")}${acad.map(itemAcad).join("")}
   </div>`;
   $("#pinPlegar").onclick=()=>{ ST.pinPlegado=!ST.pinPlegado; guardar(); renderPin(); };
 }
@@ -3097,7 +3101,8 @@ async function cargarFirebase(){
     usuario=u;
     if (u){ try{ localStorage.setItem(CLAVE_SYNC,"1"); localStorage.setItem(CLAVE_LOGIN_VISTO,"1"); }catch(e){}
             cerrarLogin();     // cubre también la vuelta del inicio de sesión por redirección
-            try{ await sincronizarAlEntrar(); }catch(e){ toast("No se pudo sincronizar: "+explicar(e)); } }
+            try{ await sincronizarAlEntrar(); }catch(e){ toast("No se pudo sincronizar: "+explicar(e)); }
+            precargarGrupos(); }
     else { try{ localStorage.removeItem(CLAVE_SYNC); }catch(e){}
            if (cortarEscucha){ cortarEscucha(); cortarEscucha=null; } }
     pintarBotonSync();
@@ -3170,7 +3175,10 @@ async function grRefrescar(){
     if (grEvAbierto) await grCargarComentarios(grEvAbierto);
   }
   catch(e){ grError = explicar(e); }
-  grCargando = false; guardar(); actualizarBadge(); renderCompartido();
+  grCargando = false; guardar(); actualizarBadge();
+  grPrecargados = true;      // ya están frescos: la precarga no tiene que repetirlo
+  renderPin();               // el pin muestra estos eventos, hay que repintarlo
+  renderCompartido();
 }
 
 async function grCrear(){
@@ -3350,29 +3358,6 @@ function grEditarAvatar(){
   $$("#avEmojis button").forEach(b => b.onclick = () => guardarAv({ ...(g.avatar||{}), emoji:b.dataset.e }));
 }
 
-/* ================= AVISO DE PROXIMIDAD, PROPIO DEL GRUPO =================
-   A propósito distinto del pin rojo "Inminente": otro color, otro texto, otra
-   ventana de días, y sólo dentro de esta pestaña. El rojo del pin urge; el verde
-   de acá sólo informa. */
-const GR_DIAS_AVISO = 7;
-function grAlertaHTML(evs){
-  const cerca = evs.filter(e => { const d = diasHasta(e.fecha); return d >= 0 && d <= GR_DIAS_AVISO; });
-  if (!cerca.length) return "";
-  /* Manda el más cercano: con un evento a dos días el cartel va en rojo aunque
-     los demás estén lejos. Avisar de menos sería el error caro. */
-  const minimo = Math.min(...cerca.map(e => diasHasta(e.fecha)));
-  const sem = semaforo(minimo);
-  const it = e => {
-    const d = diasHasta(e.fecha), s = semaforo(d);
-    return `<div class="it${s==="rojo"?" urg":s==="ambar"?" med":""}"><b>${escHTML(e.titulo)}</b>
-      <span>${GR_TIPOS[e.tipo]||"Otro"} · ${fmtFecha(e.fecha)}${e.hora?" "+e.hora:""}</span>
-      <span class="cd">${d===0?"es hoy":d===1?"mañana":"en "+d+" días"}</span></div>`;
-  };
-  return `<div class="gr-alerta${sem==="verde"?"":" sem-"+sem}">
-    <div class="tit">🔔 Se acerca en el grupo <span class="n">${cerca.length}</span></div>
-    ${cerca.map(it).join("")}</div>`;
-}
-
 /* ================= SELECTOR DE MATERIA =================
    El título sale del plan, no se escribe libre: así todos usan el mismo nombre
    y los eventos de una materia quedan reconocibles entre sí. */
@@ -3439,13 +3424,36 @@ let grResumen = {};
    solapa, que tiene que contar aunque estés mirando otro grupo. */
 let grEventosTodos = [];
 
+/* ---- por qué se precargan ----
+   Los grupos sólo se leían al abrir su pestaña. Mientras el aviso vivía ahí
+   dentro alcanzaba, pero ahora sus eventos salen en el pin, que se ve desde
+   cualquier pestaña. Sin esto, alguien que abre la app y se queda en "Materias"
+   no vería un parcial del grupo que es mañana.
+
+   De paso arregla la burbuja con el número de la solapa "Calendario compartido",
+   que por lo mismo arrancaba siempre vacía.
+
+   Son un par de lecturas por apertura —una de grupos y una por grupo—, y se
+   hacen en segundo plano: si fallan, la app sigue andando con lo que tenga. */
+let grPrecargados = false;
+async function precargarGrupos(){
+  if (grPrecargados || !usuario || !FB) return;
+  try {
+    await grCargarGrupos();
+    await grCargarResumen();
+    grPrecargados = true;
+    renderPin(); actualizarBadge();
+  } catch(_){ /* sin señal: queda para cuando se abra la pestaña */ }
+}
+
 async function grCargarResumen(){
   grResumen = {}; grEventosTodos = [];
   for (const g of grupos){
     let evs = 0;
     try {
       const se = await FB.F.getDocs(FB.F.collection(FB.db,"grupos",g.id,"eventos"));
-      const lista = se.docs.map(d => d.data());
+      // el pin necesita saber de qué grupo salió cada uno, para etiquetarlo
+      const lista = se.docs.map(d => ({ ...d.data(), grupo: g.nombre, gid: g.id }));
       grEventosTodos.push(...lista);
       evs = lista.filter(x => { const n = diasHasta(x.fecha);
         return n >= 0 && n <= GR_DIAS_AVISO; }).length;
@@ -3722,7 +3730,6 @@ function renderCompartido(){
     </div>
     ${grError?`<div class="aviso">${escHTML(grError)}</div>`:""}
     <div class="gr-aviso">${g.miembros.length} de ${GR_MAX} integrantes · se actualiza al abrir la pestaña o con ↻</div>
-    ${grAlertaHTML(fut)}
     ${novedadesHTML(nov)}
     <div class="ag-modos" id="grModos"></div>
     ${grListadoHTML(fut, pas, g)}`;

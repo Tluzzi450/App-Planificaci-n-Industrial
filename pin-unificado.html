@@ -1,0 +1,46 @@
+<!doctype html><meta charset="utf-8">
+<title>Pin unificado</title><style>
+:root{--texto:#13323f;--petrol:#00455C;--blanco:#fff;--muted:#5c7482;--linea:#edf2f5;
+--suave:#eef2f5;--sombra:0 1px 3px rgba(0,60,90,.09)}
+body{font-family:system-ui,sans-serif;background:#f4f8fa;padding:26px;max-width:660px;margin:0 auto}
+h1{font:800 17px system-ui;color:#00455C;margin:0 0 4px}
+h2{font:800 14px system-ui;color:#00455C;margin:26px 0 9px;border-bottom:1px solid #dde7ec;padding-bottom:5px}
+.pin-caja{background:var(--blanco);border:1px solid #ffb9c4;border-left:5px solid #b3122f;
+  border-radius:11px;padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra);--sem:#b3122f}
+.pin-caja.sem-ambar{border-color:#f0cd7f;border-left-color:#8a5a00;--sem:#8a5a00}
+.pin-caja.sem-verde{border-color:#a8d49a;border-left-color:#1b6b1e;--sem:#1b6b1e}
+.pin-cab{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--sem);font-size:13px;margin-bottom:7px}
+.pin-cab .cont{background:var(--sem);color:#fff;border-radius:99px;font-size:12px;
+  min-width:20px;text-align:center;padding:2px 8px;font-weight:800;line-height:1.25}
+.pin-it{display:flex;align-items:baseline;gap:9px;padding:5px 0;border-top:1px solid var(--linea);flex-wrap:wrap}
+.pin-it:first-of-type{border-top:none}
+.pin-it .q{font-weight:700;font-size:13.5px;color:var(--petrol);margin-right:auto;
+  min-width:0;flex:1 1 160px;overflow-wrap:anywhere}
+.pin-it .c{font-size:12px;font-weight:800;color:#1b6b1e;white-space:nowrap}
+.pin-it.med .c{color:#8a5a00}
+.pin-it.urg .c{color:#b3122f}
+.pin-it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pin-it .et{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;background:var(--suave);color:var(--muted)}
+.pin-it .et-gr{background:#e6eef2;color:var(--petrol);max-width:120px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pin-cab .fl{margin-left:auto;font-size:11px;color:var(--muted);transition:transform .18s;
+  display:inline-block;line-height:1}</style>
+<h1>Un solo aviso para todo</h1>
+<p style="font:600 12px system-ui;color:#5c7482;margin:3px 0 20px">Lo tuyo, lo de la facultad y lo de tus calendarios compartidos, en el mismo lugar y visible desde cualquier pestaña.</p>
+<h2>A 7, 6 o 5 días → verde</h2>
+<div class="pin-caja sem-verde">
+ <div class="pin-cab">📌 Inminente <span class="cont">1</span><span class="fl">▼</span></div>
+ <div class="pin-it"><span class="et et-gr">Com. 3I5</span><span class="q">Parcial de Física I · Parcial</span><span class="f">16 oct</span><span class="c">en 6 días</span></div></div>
+<h2>A 4 o 3 días → amarillo</h2>
+<div class="pin-caja sem-ambar">
+ <div class="pin-cab">📌 Inminente <span class="cont">2</span><span class="fl">▼</span></div>
+ <div class="pin-it med"><span class="et">Tuyo</span><span class="q">Análisis Matemático I · Parcial</span><span class="f">11 oct · 18:30</span><span class="c">en 4 días</span></div><div class="pin-it med"><span class="et et-gr">Com. 3I5</span><span class="q">TP de Química · TP</span><span class="f">10 oct</span><span class="c">en 3 días</span></div></div>
+<h2>A 2 días o menos → rojo</h2>
+<div class="pin-caja ">
+ <div class="pin-cab">📌 Inminente <span class="cont">1</span><span class="fl">▼</span></div>
+ <div class="pin-it urg"><span class="et">Tuyo</span><span class="q">Álgebra · Final</span><span class="f">8 oct · 19:00</span><span class="c">mañana</span></div></div>
+<h2>Todo junto — manda el más cercano</h2>
+<div class="pin-caja ">
+ <div class="pin-cab">📌 Inminente <span class="cont">4</span><span class="fl">▼</span></div>
+ <div class="pin-it urg"><span class="et">Tuyo</span><span class="q">Álgebra · Final</span><span class="f">8 oct</span><span class="c">mañana</span></div><div class="pin-it med"><span class="et et-gr">Com. 3I5</span><span class="q">TP de Química · TP</span><span class="f">10 oct</span><span class="c">en 3 días</span></div><div class="pin-it"><span class="et et-gr">Electromecánica 2026</span><span class="q">Parcial de Física I · Parcial</span><span class="f">13 oct</span><span class="c">en 6 días</span></div><div class="pin-it"><span class="et">No laborable</span><span class="q">Día del Respeto a la Diversidad Cultural</span><span class="f">12 oct</span><span class="c">en 5 días</span></div></div>
+<p style="font:600 12px system-ui;color:#5c7482;margin:3px 0 20px">El pin va en rojo por el de mañana. Cada renglón lleva su propio color, y la etiqueta dice de dónde sale: tuyo, de un grupo, o de la facultad.</p>
