@@ -406,6 +406,8 @@ html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:
 /* La campana vive entre los botones del encabezado y sólo aparece si hay algo
    que mostrar. El número es rojo cuando algo está a 3 días o menos. */
 .av-camp{position:relative;padding:7px 10px}
+/* la burbuja asoma fuera del botón: que no se coma el toque en el borde */
+.av-camp .pt{pointer-events:none}
 .av-camp .pt{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;
   border-radius:99px;background:var(--ambar);color:#4a3300;font-size:10.5px;font-weight:800;
   display:flex;align-items:center;justify-content:center;line-height:1}
@@ -637,8 +639,12 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
   .head-tit h1{font-size:15px}
   .head-tit small{display:block;font-size:11px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* La fila se desliza de costado, y un contenedor que se desliza recorta lo que
+     se sale por CUALQUIER lado, no sólo por el que se desliza. La burbuja de la
+     campana asoma 6px por arriba y por la derecha, así que sin este margen queda
+     cortada. El padding le da ese lugar dentro de la caja. */
   .head-acc{flex-basis:100%;gap:6px;justify-content:flex-start;overflow-x:auto;
-    padding-bottom:2px;-webkit-overflow-scrolling:touch}
+    padding:7px 7px 2px 1px;-webkit-overflow-scrolling:touch}
   .head-acc::-webkit-scrollbar{display:none}
   .head-acc .btn{flex:none;font-size:12px;padding:6px 10px}
   /* la barra de solapas ya se desplaza de costado: se le quita el recorte
@@ -887,7 +893,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.10c · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.10e · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -3381,6 +3387,9 @@ function grModalEvento(ev){
       tipo: $("#geTipo").value, detalle: $("#geDetalle").value.trim().slice(0,500),
       autor: ev ? ev.autor : usuario.uid, autorNombre: ev ? ev.autorNombre : miNombre(),
       creado: ev ? ev.creado : new Date().toISOString(), actualizado: new Date().toISOString() };
+    /* Al editar queda firmado quién lo hizo. Lo exigen las reglas, y es lo que
+       alimenta el "editado por" y las novedades. */
+    if (ev){ datos.editor = usuario.uid; datos.editorNombre = miNombre(); }
     try {
       if (ev) await FB.F.setDoc(FB.F.doc(FB.db,"grupos",g.id,"eventos",ev.id), datos);
       else    await FB.F.addDoc(FB.F.collection(FB.db,"grupos",g.id,"eventos"), datos);
@@ -3652,14 +3661,23 @@ function grListadoHTML(fut, pas, g){
       <div class="burbujas">${pas.map(e=>grEventoHTML(e,g)).join("")}</div>`:"");
 }
 
+/* Quién tocó el evento por última vez. Cuando alguien edita lo de otro, el que
+   importa para las novedades y para el "editado por" es el editor, no quien lo
+   cargó. */
+const grQuienToco = e => e.editor || e.autor;
+const grQuienTocoNombre = e => e.editorNombre || e.autorNombre || "alguien";
+
 /* Novedades: no hacen falta avisos push ni un registro aparte. Cada evento ya
    guarda quién lo tocó y cuándo, así que alcanza con comparar contra la última
    vez que miraste este grupo. */
 function novedadesSinVer(g){
   const visto = (ST.grVistos||{})[g.id] || "";
   if (!visto) return [];            // primera visita: no tiene sentido "todo es nuevo"
+  /* Se mira quién lo TOCÓ, no quién lo cargó: ahora cualquiera edita lo de
+     cualquiera. Si se filtrara por autor, a quien cargó el evento no le
+     aparecería que otro se lo cambió, que es justo lo que hay que avisar. */
   return grEventos
-    .filter(e => e.autor !== usuario.uid && String(e.actualizado||e.creado||"") > visto)
+    .filter(e => grQuienToco(e) !== usuario.uid && String(e.actualizado||e.creado||"") > visto)
     .map(e => ({ ...e, esAlta: !e.actualizado || e.actualizado === e.creado }))
     .sort((a,b) => String(b.actualizado||b.creado).localeCompare(String(a.actualizado||a.creado)));
 }
@@ -3668,7 +3686,7 @@ function novedadesHTML(nov){
   if (!nov.length) return "";
   const it = e => `<div class="it">
     <span class="v ${e.esAlta?"alta":"cambio"}">${e.esAlta?"agregó":"modificó"}</span>
-    <span class="q">${escHTML(e.autorNombre||"alguien")}: ${escHTML(e.titulo)} · ${fmtFecha(e.fecha)}</span>
+    <span class="q">${escHTML(grQuienTocoNombre(e))}: ${escHTML(e.titulo)} · ${fmtFecha(e.fecha)}</span>
     <span class="c">${cuandoTxt(e.actualizado||e.creado)}</span></div>`;
   return `<div class="gr-nov">
     <div class="cab">🆕 Novedades <span class="n">${nov.length}</span>
@@ -3723,7 +3741,12 @@ function exportarGrupoIcs(){
 function grEventoHTML(e, g){
   const d = diasHasta(e.fecha), c = textoCuenta(d);
   const cls = d<0 ? "pasado" : d<=2 ? "urgente" : d<=7 ? "pronto" : "";
-  const puedo = e.autor === usuario.uid || g.creador === usuario.uid;
+  /* Editar lo puede cualquier integrante: el calendario es del grupo. Borrar no:
+     una edición se deshace, un borrado no. */
+  const puedoBorrar = e.autor === usuario.uid || g.creador === usuario.uid;
+  /* Sólo se muestra si lo editó alguien distinto de quien lo cargó. Si el autor
+     corrige lo suyo, "lo cargó" ya lo dice todo. */
+  const editado = e.editor && e.editor !== e.autor;
   /* Misma estructura que las burbujas de la agenda personal, para que las dos
      pestañas se lean igual. Lo propio del grupo —quién lo cargó y los
      comentarios— se suma abajo, sin cambiar el formato. */
@@ -3737,6 +3760,7 @@ function grEventoHTML(e, g){
     </div>
     <div class="meta">📅 ${fmtFecha(e.fecha)}${e.hora?` · ${e.hora} hs`:""}</div>
     <div class="meta">👤 lo cargó ${escHTML(e.autorNombre||"alguien")}</div>
+    ${editado?`<div class="meta">✏️ editado por ${escHTML(e.editorNombre||"alguien")}</div>`:""}
     <div class="acc">
       <button class="gr-vercom" data-gr-com="${e.id}">${
         grEvAbierto===e.id ? "ocultar comentarios"
@@ -3744,8 +3768,8 @@ function grEventoHTML(e, g){
       ${d>=0?`<a class="btn-mini cal" href="${urlGoogleCalendarGrupo(e, g.nombre)}"
         target="_blank" rel="noopener"
         title="Abre Google Calendar con los datos cargados">📅 Google Calendar</a>`:""}
-      ${puedo?`<button class="btn-mini" data-gr-edit="${e.id}">editar</button>
-      <button class="btn-mini" data-gr-del="${e.id}">eliminar</button>`:""}
+      <button class="btn-mini" data-gr-edit="${e.id}">editar</button>
+      ${puedoBorrar?`<button class="btn-mini" data-gr-del="${e.id}">eliminar</button>`:""}
     </div>
     ${grEvAbierto===e.id ? `<div class="gr-com">
       ${(grComentarios[e.id]||[]).length
