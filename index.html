@@ -710,6 +710,17 @@ svg.atenuado .gnode.hl,svg.atenuado .gedge.hl{opacity:1}
 footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line-height:1.7}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--marca);color:#fff;font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:9px;box-shadow:0 4px 20px rgba(0,0,0,.3);opacity:0;transition:.3s;z-index:200;pointer-events:none}
 .toast.ver{opacity:1}
+/* El aviso de versión nueva es un botón entero, no un cartel con un botón
+   adentro: en el celular acertarle a un botón chico dentro de un toast es
+   incómodo, y así toda la superficie sirve. */
+.aviso-ver{display:flex;align-items:center;gap:11px;border:none;text-align:left;
+  cursor:pointer;padding:9px 16px;max-width:calc(100vw - 28px)}
+.aviso-ver:hover{background:var(--petrol-osc)}
+.aviso-ver:disabled{cursor:default;opacity:.85}
+.aviso-ver .ic{font-size:15px;line-height:1;flex:none}
+.aviso-ver .txt{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.aviso-ver .txt b{font-size:13.5px;font-weight:800}
+.aviso-ver .txt small{font-size:11.5px;font-weight:600;color:#bcd6e0}
 @media print{header,nav,.filtros,.head-acc{display:none}}
 </style>
 <script>
@@ -738,7 +749,6 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <input type="file" id="inpImportar" accept=".json" hidden>
       <button class="btn peligro" id="btnReiniciar">Reiniciar</button>
       <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo">📲</button>
-      <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄</button>
     </div>
   </div>
   <!-- cuelga del encabezado, que es sticky: así acompaña el desplazamiento y no
@@ -877,7 +887,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.10b · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.10c · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -3133,20 +3143,6 @@ $("#inpImportar").onchange=e=>{
 /* Fuerza la búsqueda de una versión nueva. El service worker sirve el HTML por
    red primero, así que normalmente alcanza con reabrir; esto es para cuando el
    navegador o la app instalada se quedaron con la copia guardada. */
-$("#btnActualizarApp").onclick=async()=>{
-  toast("Buscando actualizaciones…");
-  try {
-    if ("serviceWorker" in navigator){
-      const regs = await navigator.serviceWorker.getRegistrations();
-      // update() vuelve a pedir el sw al servidor; si cambió, se instala el nuevo
-      await Promise.all(regs.map(r => r.update().catch(()=>{})));
-      for (const r of regs) if (r.waiting) r.waiting.postMessage("actualizar-ya");
-    }
-  } catch(e){}
-  // recarga saltando la caché del navegador
-  setTimeout(()=>location.reload(true), 600);
-};
-
 $("#btnReiniciar").onclick=()=>{
   if (confirm("¿Borrar TODO tu estado (materias, horario, agenda y simulador)? Esta acción no se puede deshacer.\nTip: exportá antes por las dudas."))
     { ST={version:1,estados:{},notas:{},aplazos:{},grilla:{},sim:{asumir:true,anios:[]},manuales:[],horarios:null,examenes:[],_mseq:0,_eseq:0}; COMISIONES=construirComisiones(COMISIONES_RAW.comisiones); guardar(); render(); }
@@ -4296,16 +4292,31 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
     }).catch(()=>{});
   });
 }
-/* Aviso discreto y con acción: si no se puede recargar solo, el estudiante decide. */
+/* El aviso ES el botón: se toca en cualquier parte y actualiza. Antes había que
+   acertarle a un botón chico dentro del cartel, y además un 🔄 en el encabezado
+   que hacía lo mismo. Con uno solo alcanza, y el encabezado queda más corto.
+
+   No se cierra solo ni tiene una ✕: si alguien lo ignora, el aviso vuelve a
+   aparecer en la próxima visita, que es cuando el service worker vuelve a
+   mirar si hay algo nuevo. */
+let avisoActualizar = null;
 function avisarActualizacion(reg){
-  const b=document.createElement("div");
-  b.className="toast ver";
-  b.style.cssText+=";display:flex;gap:10px;align-items:center;cursor:default";
-  b.innerHTML=`<span>Hay una versión nueva del planificador.</span>`;
-  const btn=document.createElement("button");
-  btn.textContent="Actualizar"; btn.className="btn primario"; btn.style.padding="4px 10px";
-  btn.onclick=()=>{ if(reg.waiting) reg.waiting.postMessage("actualizar-ya"); location.reload(); };
-  b.appendChild(btn); document.body.appendChild(b);
+  if (avisoActualizar) return;              // uno solo, aunque el evento se repita
+  const b = document.createElement("button");
+  b.className = "toast ver aviso-ver";
+  b.type = "button";
+  b.innerHTML = `<span class="ic">⬇</span>
+    <span class="txt"><b>Hay una versión nueva</b><small>Tocá para actualizar</small></span>`;
+  b.onclick = () => {
+    b.querySelector(".txt").innerHTML = "<b>Actualizando…</b>";
+    b.disabled = true;
+    if (reg.waiting) reg.waiting.postMessage("actualizar-ya");
+    /* Un respiro para que el service worker nuevo tome el control; si no llega a
+       hacerlo, la recarga igual trae el HTML fresco, que va por red primero. */
+    setTimeout(() => location.reload(), 400);
+  };
+  avisoActualizar = b;
+  document.body.appendChild(b);
 }
 
 /* Atajos del ícono de la pantalla de inicio: ?v=agenda abre esa pestaña directo.
