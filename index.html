@@ -90,7 +90,9 @@ html[data-tema="oscuro"] .logo-login svg .st1{fill:#fff}
 .head-tit{margin-right:auto}
 .head-tit h1{font-size:17px;font-weight:800;color:var(--petrol);line-height:1.15}
 .head-tit small{color:var(--gris);font-weight:600;font-size:12px}
-.head-acc{display:flex;gap:8px;flex-wrap:wrap}
+/* margin-left:auto los manda a la derecha también cuando el título es largo y
+   caen a una segunda línea, que es lo que pasaba en pantallas anchas. */
+.head-acc{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .btn{border:1px solid var(--borde);background:var(--blanco);color:var(--petrol);font-weight:600;font-size:13px;padding:7px 12px;border-radius:8px;transition:.15s}
 .btn:hover{border-color:var(--petrol);background:var(--hover)}
 .btn.primario{background:var(--marca);border-color:var(--marca);color:#fff}
@@ -409,8 +411,10 @@ html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:
   display:flex;align-items:center;justify-content:center;line-height:1}
 .av-camp .pt.rojo{background:#b3122f;color:#fff}
 
-/* El panel cuelga del encabezado. Flota: no empuja el contenido al abrirse. */
-.np{position:absolute;right:16px;top:calc(100% - 4px);width:340px;max-width:calc(100vw - 24px);
+/* El panel cuelga del encabezado y flota: no empuja el contenido al abrirse. Su
+   posición horizontal la fija posicionarPanel() a la altura de la campana, que
+   se mueve según cuántos botones haya y si la fila se parte en dos. */
+.np{position:absolute;left:16px;top:calc(100% - 4px);width:340px;max-width:calc(100vw - 24px);
   background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
   box-shadow:0 10px 30px rgba(0,50,75,.18);overflow:hidden;z-index:60}
 .np[hidden]{display:none}
@@ -443,24 +447,30 @@ html[data-tema="oscuro"] .np-it .c{color:#8fd47f}
 html[data-tema="oscuro"] .np-it.urg .c{color:#ff9fae}
 html[data-tema="oscuro"] .np-it .et-gr{background:#24404c;color:#cfe3ec}
 
-/* La franja: una línea, y sólo cuando algo está a 3 días o menos. El resto de la
-   semana no hay nada arriba del contenido. */
-.franja-urg{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
-  background:#fff0f2;border:1px solid #ffb9c4;border-left:4px solid #b3122f;border-radius:9px;
-  padding:8px 12px;margin-bottom:14px;cursor:pointer;transition:.15s}
-.franja-urg:hover{background:#ffe6ea}
-.franja-urg .ic{font-size:13px;line-height:1;flex:none}
-.franja-urg .q{font-weight:800;font-size:12.5px;color:#b3122f;min-width:0;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.franja-urg .c{font-weight:800;font-size:12px;color:#b3122f;white-space:nowrap;margin-left:auto;flex:none}
-.franja-urg .mas{font-weight:700;font-size:11px;color:#8a4350;white-space:nowrap;flex:none}
-html[data-tema="oscuro"] .franja-urg{background:#3d1620;border-color:#6b2534;border-left-color:#ff9fae}
-html[data-tema="oscuro"] .franja-urg .q,
-html[data-tema="oscuro"] .franja-urg .c{color:#ff9fae}
-html[data-tema="oscuro"] .franja-urg .mas{color:#d9959f}
+/* El pin: el recuadro rojo de siempre, ahora sólo con lo que está a 3 días o
+   menos. Lo de 4 a 7 vive en el panel de la campana. */
+.pin-caja{background:var(--blanco);border:1px solid var(--rojo);border-left:5px solid var(--rojo);
+  border-radius:11px;padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra)}
+.pin-cab{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--rojo);
+  font-size:13px;margin-bottom:7px}
+.pin-cab .cont{background:var(--rojo);color:#fff;border-radius:99px;font-size:11px;
+  padding:1px 7px;font-weight:800}
+.pin-it{display:flex;align-items:baseline;gap:9px;padding:5px 0;
+  border-top:1px solid var(--linea);flex-wrap:wrap}
+.pin-it:first-of-type{border-top:none}
+.pin-it .et{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;
+  background:var(--suave);color:var(--muted);flex:none}
+.pin-it .et-gr{background:#e6eef2;color:var(--petrol);max-width:120px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pin-it .q{font-weight:700;font-size:13.5px;color:var(--petrol);margin-right:auto;
+  min-width:0;flex:1 1 160px;overflow-wrap:anywhere}
+.pin-it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pin-it .c{font-size:12px;font-weight:800;color:var(--rojo);white-space:nowrap}
+html[data-tema="oscuro"] .pin-caja{background:#2b1319}
+html[data-tema="oscuro"] .pin-it .et-gr{background:#24404c;color:#cfe3ec}
 @media(max-width:560px){
-  .np{right:8px;left:8px;width:auto;max-width:none}
-  .franja-urg .mas{display:none}   /* en pantalla chica, el título y la cuenta mandan */
+  /* en el celular ocupa el ancho: alinearlo con la campana lo dejaría cortado */
+  .np{right:8px;left:8px!important;width:auto;max-width:none}
 }
 /* ---------- calendario: eventos institucionales ---------- */
 .cal-dia.enrango{background:var(--suave)}
@@ -720,13 +730,13 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <small>UTN Facultad Regional Haedo · Plan 2023 (Ord. 1908/2141) · Horarios 2026</small>
     </div>
     <div class="head-acc">
+      <button class="btn av-camp" id="btnAvisos" title="Lo que se viene" hidden>🔔<span class="pt" id="avisosPt"></span></button>
       <button class="btn" id="btnTema" title="Cambiar entre tema claro y oscuro">🌙</button>
       <button class="btn" id="btnSync" title="Sincronizar tus datos entre dispositivos" hidden>☁ Sincronizar</button>
       <button class="btn" id="btnExportar" title="Descarga tu estado como archivo JSON">⬇ Exportar</button>
       <button class="btn" id="btnImportar" title="Carga un estado exportado previamente">⬆ Importar</button>
       <input type="file" id="inpImportar" accept=".json" hidden>
       <button class="btn peligro" id="btnReiniciar">Reiniciar</button>
-      <button class="btn av-camp" id="btnAvisos" title="Lo que se viene" hidden>🔔<span class="pt" id="avisosPt"></span></button>
       <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo">📲</button>
       <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄</button>
     </div>
@@ -867,7 +877,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.10 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.10b · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2357,6 +2367,21 @@ function avisoItemHTML(e){
 
 let panelAbierto = false;
 
+/* Lo deja justo debajo de la campana. Se mide en el momento de abrir porque la
+   campana cambia de lugar: aparece y desaparece según haya avisos, y la fila de
+   botones se parte en dos líneas cuando el título no entra. */
+function posicionarPanel(){
+  const pan = $("#panelAvisos"), b = $("#btnAvisos"), h = document.querySelector("header");
+  if (!pan || !b || !h || b.hidden) return;
+  if (innerWidth <= 560){ pan.style.left = ""; return; }   // ahí ocupa todo el ancho
+  const rb = b.getBoundingClientRect(), rh = h.getBoundingClientRect();
+  const ancho = pan.offsetWidth || 340;
+  // si pegado a la campana se saldría por la derecha, se corre lo justo
+  const tope = rh.width - ancho - 10;
+  pan.style.left = Math.max(10, Math.min(rb.left - rh.left, tope)) + "px";
+}
+addEventListener("resize", () => { if (panelAbierto) posicionarPanel(); });
+
 function renderPin(){
   const evs = avisosProximos();
   const urgentes = evs.filter(e => e.d <= INMINENTE);
@@ -2389,6 +2414,7 @@ function renderPin(){
         ${sec(`Inminente · ${INMINENTE} días o menos`, urgentes)}
         ${sec("Esta semana", resto)}
         <div class="np-pie"><button id="avisosIrAgenda">Ver la agenda completa →</button></div>`;
+      posicionarPanel();
       $("#avisosCerrar").onclick = () => { panelAbierto = false; renderPin(); };
       $("#avisosIrAgenda").onclick = () => {
         panelAbierto = false;
@@ -2397,19 +2423,21 @@ function renderPin(){
     }
   }
 
-  /* ---- la franja, sólo cuando algo aprieta ---- */
+  /* ---- el pin, sólo con lo que está a 3 días o menos ----
+     Muestra la ficha entera de cada evento —de dónde sale, qué es, cuándo y
+     cuánto falta—, igual que antes. Lo que cambió es a quiénes incluye: lo de
+     4 a 7 días vive en el panel, no acá. */
   const cont = $("#pinEventos"); if (!cont) return;
   if (!urgentes.length){ cont.innerHTML = ""; return; }
-  const u = urgentes[0];
-  const mas = urgentes.length - 1;
-  cont.innerHTML = `<button class="franja-urg" id="franjaUrg"
-    title="Ver todo lo que se viene">
-    <span class="ic">📌</span>
-    <span class="q">${escHTML(u.q)}</span>
-    <span class="c">${escHTML(u.c)}</span>
-    ${mas ? `<span class="mas">y ${mas} más</span>` : ""}</button>`;
-  // sin frenar la propagación, el mismo clic llega al documento y lo cierra
-  $("#franjaUrg").onclick = ev => { ev.stopPropagation(); panelAbierto = true; renderPin(); };
+  const fila = e => `<div class="pin-it">
+    <span class="et${e.origen==="grupo"?" et-gr":""}"${e.origen==="grupo"?' title="Evento de un calendario compartido"':""}>${escHTML(e.et)}</span>
+    <span class="q">${escHTML(e.q)}</span>
+    <span class="f">${escHTML(e.f)}</span>
+    <span class="c">${escHTML(e.c)}</span></div>`;
+  cont.innerHTML = `<div class="pin-caja">
+    <div class="pin-cab">📌 Inminente <span class="cont">${urgentes.length}</span></div>
+    ${urgentes.map(fila).join("")}
+  </div>`;
 }
 
 /* ================= AGENDA DE EXÁMENES =================
