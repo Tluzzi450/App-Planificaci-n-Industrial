@@ -402,53 +402,7 @@ html[data-tema="oscuro"] .gr-nov .it .v.baja{background:#3d1620;color:#ff9fae}
   color:var(--verde-txt);border-radius:10px;padding:14px 18px;font-weight:700;font-size:14px;max-width:620px}
 html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:#bde08a}
 /* ---------- pin de eventos inminentes ---------- */
-/* ---------- avisos: campana, panel y franja ---------- */
-/* La campana vive entre los botones del encabezado y sólo aparece si hay algo
-   que mostrar. El número es rojo cuando algo está a 3 días o menos. */
-.av-camp{position:relative;padding:7px 10px}
-/* la burbuja asoma fuera del botón: que no se coma el toque en el borde */
-.av-camp .pt{pointer-events:none}
-.av-camp .pt{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;
-  border-radius:99px;background:var(--ambar);color:#4a3300;font-size:10.5px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;line-height:1}
-.av-camp .pt.rojo{background:#b3122f;color:#fff}
-
-/* El panel cuelga del encabezado y flota: no empuja el contenido al abrirse. Su
-   posición horizontal la fija posicionarPanel() a la altura de la campana, que
-   se mueve según cuántos botones haya y si la fila se parte en dos. */
-.np{position:absolute;left:16px;top:calc(100% - 4px);width:340px;max-width:calc(100vw - 24px);
-  background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
-  box-shadow:0 10px 30px rgba(0,50,75,.18);overflow:hidden;z-index:60}
-.np[hidden]{display:none}
-.np-cab{display:flex;align-items:center;gap:7px;padding:10px 13px;border-bottom:1px solid var(--linea);
-  font-weight:800;font-size:13px;color:var(--petrol)}
-.np-cab button{margin-left:auto;border:none;background:none;color:var(--gris);font-size:16px;
-  line-height:1;padding:0 2px}
-.np-cab button:hover{color:var(--petrol)}
-/* algo más oscuro que --muted: en mayúsculas y a 10px, sobre el gris del fondo
-   ese tono quedaba en 4.36:1, apenas por debajo de lo cómodo */
-.np-sec{font-size:10.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;
-  color:#4a6070;background:var(--suave);padding:5px 13px}
-html[data-tema="oscuro"] .np-sec{color:var(--muted)}
-.np-it{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:8px 13px;
-  border-top:1px solid var(--linea)}
-.np-it .et{font-size:10px;font-weight:800;border-radius:5px;padding:1px 6px;
-  background:var(--suave);color:var(--muted);flex:none}
-.np-it .et-gr{background:#e6eef2;color:var(--petrol);max-width:100px;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
-.np-it .q{font-weight:700;font-size:12.5px;color:var(--petrol);flex:1 1 130px;min-width:0;
-  overflow-wrap:anywhere}
-.np-it .f{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
-/* la cuenta se alinea a la derecha y es lo único con color: dice cuánto falta */
-.np-it .c{font-size:11.5px;font-weight:800;color:#1b6b1e;white-space:nowrap;margin-left:auto}
-.np-it.urg .c{color:#b3122f}
-.np-pie{padding:7px 13px;border-top:1px solid var(--linea)}
-.np-pie button{border:none;background:none;color:var(--acento);font-weight:700;font-size:12px;padding:0}
-.np-pie button:hover{text-decoration:underline}
-html[data-tema="oscuro"] .np-it .c{color:#8fd47f}
-html[data-tema="oscuro"] .np-it.urg .c{color:#ff9fae}
-html[data-tema="oscuro"] .np-it .et-gr{background:#24404c;color:#cfe3ec}
-
+/* ---------- pin de eventos inminentes ---------- */
 /* El pin: el recuadro rojo de siempre, ahora sólo con lo que está a 3 días o
    menos. Lo de 4 a 7 vive en el panel de la campana. */
 .pin-caja{background:var(--blanco);border:1px solid var(--rojo);border-left:5px solid var(--rojo);
@@ -470,10 +424,29 @@ html[data-tema="oscuro"] .np-it .et-gr{background:#24404c;color:#cfe3ec}
 .pin-it .c{font-size:12px;font-weight:800;color:var(--rojo);white-space:nowrap}
 html[data-tema="oscuro"] .pin-caja{background:#2b1319}
 html[data-tema="oscuro"] .pin-it .et-gr{background:#24404c;color:#cfe3ec}
-@media(max-width:560px){
-  /* en el celular ocupa el ancho: alinearlo con la campana lo dejaría cortado */
-  .np{right:8px;left:8px!important;width:auto;max-width:none}
-}
+/* ---------- eventos próximos del grupo ---------- */
+/* Tono sobrio, distinto del pin: éste informa, el pin urge. Lo único con color
+   es la cuenta, y en rojo sólo lo que también está en el pin, para que las dos
+   cosas se lean como lo mismo visto de dos maneras. */
+.gr-prox{background:var(--blanco);border:1px solid var(--borde);border-radius:11px;
+  padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra)}
+.gr-prox .cab{display:flex;align-items:center;gap:7px;font-weight:800;font-size:13px;
+  color:var(--petrol);margin-bottom:7px}
+.gr-prox .cab .n{background:var(--marca);color:#fff;border-radius:99px;font-size:11px;
+  padding:1px 8px;font-weight:800}
+.gr-prox .cab small{margin-left:auto;font-weight:700;font-size:11px;color:var(--muted)}
+.gr-prox .it{display:flex;align-items:baseline;gap:9px;padding:5px 0;flex-wrap:wrap;
+  border-top:1px solid var(--linea)}
+.gr-prox .it:first-of-type{border-top:none}
+.gr-prox .it .q{font-weight:700;font-size:13.5px;color:var(--petrol);min-width:0;
+  flex:1 1 160px;overflow-wrap:anywhere}
+.gr-prox .it .t{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;
+  background:var(--suave);color:var(--muted);flex:none}
+.gr-prox .it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.gr-prox .it .c{font-size:12px;font-weight:800;color:var(--petrol);white-space:nowrap;
+  margin-left:auto}
+.gr-prox .it.urg .c{color:var(--rojo)}
+html[data-tema="oscuro"] .gr-prox .it.urg .c{color:#ff9fae}
 /* ---------- calendario: eventos institucionales ---------- */
 .cal-dia.enrango{background:var(--suave)}
 .cal-dia.enrango.hoy{background:var(--hover)}
@@ -639,12 +612,8 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
   .head-tit h1{font-size:15px}
   .head-tit small{display:block;font-size:11px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  /* La fila se desliza de costado, y un contenedor que se desliza recorta lo que
-     se sale por CUALQUIER lado, no sólo por el que se desliza. La burbuja de la
-     campana asoma 6px por arriba y por la derecha, así que sin este margen queda
-     cortada. El padding le da ese lugar dentro de la caja. */
   .head-acc{flex-basis:100%;gap:6px;justify-content:flex-start;overflow-x:auto;
-    padding:7px 7px 2px 1px;-webkit-overflow-scrolling:touch}
+    padding-bottom:2px;-webkit-overflow-scrolling:touch}
   .head-acc::-webkit-scrollbar{display:none}
   .head-acc .btn{flex:none;font-size:12px;padding:6px 10px}
   /* la barra de solapas ya se desplaza de costado: se le quita el recorte
@@ -747,7 +716,6 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <small>UTN Facultad Regional Haedo · Plan 2023 (Ord. 1908/2141) · Horarios 2026</small>
     </div>
     <div class="head-acc">
-      <button class="btn av-camp" id="btnAvisos" title="Lo que se viene" hidden>🔔<span class="pt" id="avisosPt"></span></button>
       <button class="btn" id="btnTema" title="Cambiar entre tema claro y oscuro">🌙</button>
       <button class="btn" id="btnSync" title="Sincronizar tus datos entre dispositivos" hidden>☁ Sincronizar</button>
       <button class="btn" id="btnExportar" title="Descarga tu estado como archivo JSON">⬇ Exportar</button>
@@ -757,9 +725,6 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo">📲</button>
     </div>
   </div>
-  <!-- cuelga del encabezado, que es sticky: así acompaña el desplazamiento y no
-       empuja el contenido al abrirse -->
-  <div class="np" id="panelAvisos" hidden></div>
   <div class="franja"><i></i><i></i><i></i><i></i><i></i></div>
   <nav><div class="nav-int">
     <button data-vista="materias" class="activa">Materias</button>
@@ -893,7 +858,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.10e · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.12 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2373,71 +2338,8 @@ function avisosProximos(){
   return out.sort((a,b) => a.d - b.d);
 }
 
-function avisoItemHTML(e){
-  return `<div class="np-it${e.d<=INMINENTE?" urg":""}">
-    <span class="et${e.origen==="grupo"?" et-gr":""}"${e.origen==="grupo"?' title="Evento de un calendario compartido"':""}>${escHTML(e.et)}</span>
-    <span class="q">${escHTML(e.q)}</span>
-    <span class="f">${escHTML(e.f)}</span>
-    <span class="c">${escHTML(e.c)}</span></div>`;
-}
-
-let panelAbierto = false;
-
-/* Lo deja justo debajo de la campana. Se mide en el momento de abrir porque la
-   campana cambia de lugar: aparece y desaparece según haya avisos, y la fila de
-   botones se parte en dos líneas cuando el título no entra. */
-function posicionarPanel(){
-  const pan = $("#panelAvisos"), b = $("#btnAvisos"), h = document.querySelector("header");
-  if (!pan || !b || !h || b.hidden) return;
-  if (innerWidth <= 560){ pan.style.left = ""; return; }   // ahí ocupa todo el ancho
-  const rb = b.getBoundingClientRect(), rh = h.getBoundingClientRect();
-  const ancho = pan.offsetWidth || 340;
-  // si pegado a la campana se saldría por la derecha, se corre lo justo
-  const tope = rh.width - ancho - 10;
-  pan.style.left = Math.max(10, Math.min(rb.left - rh.left, tope)) + "px";
-}
-addEventListener("resize", () => { if (panelAbierto) posicionarPanel(); });
-
 function renderPin(){
-  const evs = avisosProximos();
-  const urgentes = evs.filter(e => e.d <= INMINENTE);
-
-  /* ---- la campana y su número ---- */
-  const b = $("#btnAvisos");
-  if (b){
-    b.hidden = !evs.length;
-    const pt = $("#avisosPt");
-    if (pt){
-      pt.textContent = evs.length;
-      pt.classList.toggle("rojo", urgentes.length > 0);
-    }
-    b.title = urgentes.length
-      ? `${urgentes.length} evento${urgentes.length>1?"s":""} a ${INMINENTE} días o menos`
-      : `${evs.length} evento${evs.length>1?"s":""} esta semana`;
-  }
-  if (!evs.length) panelAbierto = false;
-
-  /* ---- el panel ---- */
-  const pan = $("#panelAvisos");
-  if (pan){
-    pan.hidden = !panelAbierto || !evs.length;
-    if (!pan.hidden){
-      const resto = evs.filter(e => e.d > INMINENTE);
-      const sec = (t, l) => l.length
-        ? `<div class="np-sec">${t}</div>` + l.map(avisoItemHTML).join("") : "";
-      pan.innerHTML = `<div class="np-cab">🔔 Lo que se viene
-        <button id="avisosCerrar" title="Cerrar">✕</button></div>
-        ${sec(`Inminente · ${INMINENTE} días o menos`, urgentes)}
-        ${sec("Esta semana", resto)}
-        <div class="np-pie"><button id="avisosIrAgenda">Ver la agenda completa →</button></div>`;
-      posicionarPanel();
-      $("#avisosCerrar").onclick = () => { panelAbierto = false; renderPin(); };
-      $("#avisosIrAgenda").onclick = () => {
-        panelAbierto = false;
-        const t = $(`.nav-int button[data-vista="agenda"]`); if (t) t.click(); else renderPin();
-      };
-    }
-  }
+  const urgentes = avisosProximos().filter(e => e.d <= INMINENTE);
 
   /* ---- el pin, sólo con lo que está a 3 días o menos ----
      Muestra la ficha entera de cada evento —de dónde sale, qué es, cuándo y
@@ -3621,6 +3523,28 @@ function grGrupoHTML(titulo, evs, g, extra){
     <div class="burbujas">${evs.map(e=>grEventoHTML(e,g)).join("")}</div></div>`;
 }
 
+/* ================= EVENTOS PRÓXIMOS DEL GRUPO =================
+   Lo que se viene en ESTE grupo dentro de la semana. El pin de arriba sólo
+   muestra lo que está a 3 días o menos y mezcla todo —lo tuyo, lo de la facultad
+   y lo de todos tus grupos—; acá se ve el tramo de 4 a 7 días y sólo del grupo
+   que estás mirando. */
+function grProximosHTML(evs){
+  const cerca = evs
+    .map(e => ({ ...e, d: diasHasta(e.fecha) }))
+    .filter(e => e.d >= 0 && e.d <= GR_DIAS_AVISO)
+    .sort((a,b) => a.d - b.d);
+  if (!cerca.length) return "";
+  const it = e => `<div class="it${e.d<=INMINENTE?" urg":""}">
+    <span class="q">${escHTML(e.titulo)}</span>
+    <span class="t">${GR_TIPOS[e.tipo]||"Otro"}</span>
+    <span class="f">${fmtFecha(e.fecha)}${e.hora?` · ${e.hora} hs`:""}</span>
+    <span class="c">${e.d===0?"es hoy":e.d===1?"mañana":"en "+e.d+" días"}</span></div>`;
+  return `<div class="gr-prox">
+    <div class="cab">📅 Eventos próximos <span class="n">${cerca.length}</span>
+      <small>7 días o menos</small></div>
+    ${cerca.map(it).join("")}</div>`;
+}
+
 function grListadoHTML(fut, pas, g){
   const modo = modoGrupo();
   const todos = [...fut, ...pas.slice().reverse()];
@@ -3840,6 +3764,7 @@ function renderCompartido(){
     ${grError?`<div class="aviso">${escHTML(grError)}</div>`:""}
     <div class="gr-aviso">${g.miembros.length} de ${GR_MAX} integrantes · se actualiza al abrir la pestaña o con ↻</div>
     ${novedadesHTML(nov)}
+    ${grProximosHTML(grEventos)}
     <div class="ag-modos" id="grModos"></div>
     ${grListadoHTML(fut, pas, g)}`;
 
@@ -4238,17 +4163,6 @@ function abrirModalInstalar(){
    que instalar. */
 $("#btnInstalarApp").onclick = abrirModalInstalar;
 
-/* La campana abre y cierra el panel; un toque afuera también lo cierra, que es
-   lo que uno espera de algo que flota. */
-$("#btnAvisos").onclick = ev => { ev.stopPropagation(); panelAbierto = !panelAbierto; renderPin(); };
-document.addEventListener("click", ev => {
-  if (!panelAbierto) return;
-  if (ev.target.closest("#panelAvisos") || ev.target.closest("#btnAvisos")) return;
-  panelAbierto = false; renderPin();
-});
-addEventListener("keydown", ev => {
-  if (ev.key === "Escape" && panelAbierto){ panelAbierto = false; renderPin(); }
-});
 
 function renderInstalar(){
   const c = $("#instCont"); if(!c) return;
