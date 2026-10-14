@@ -369,19 +369,6 @@ html[data-tema="oscuro"] .gr-nov .it .v.baja{background:#3d1620;color:#ff9fae}
 .gr-vercom{border:1px solid var(--borde);background:var(--blanco);color:var(--petrol);
   border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700}
 .gr-vercom:hover{border-color:var(--acento)}
-/* ---------- selector de materia ---------- */
-.gr-busca{position:relative}
-.gr-lista{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--blanco);
-  border:1px solid var(--borde);border-radius:9px;box-shadow:0 8px 24px rgba(0,41,58,.18);
-  max-height:230px;overflow:auto;margin-top:3px}
-.gr-lista button{display:block;width:100%;text-align:left;border:none;background:none;
-  padding:8px 11px;font-size:13px;color:var(--texto);font-family:inherit;border-bottom:1px solid var(--linea)}
-.gr-lista button:last-child{border-bottom:none}
-.gr-lista button:hover,.gr-lista button.marcada{background:var(--hover);color:var(--petrol);font-weight:700}
-.gr-lista .niv{font-size:10.5px;color:var(--gris);font-weight:700;margin-left:6px}
-.gr-elegida{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--acento);
-  border-radius:9px;background:var(--suave);font-weight:700;color:var(--petrol);font-size:13.5px}
-.gr-elegida button{margin-left:auto;border:none;background:none;color:var(--gris);font-size:15px;line-height:1}
 /* ---------- pestaña Instalar ---------- */
 .inst-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
   padding:20px 22px;box-shadow:var(--sombra);max-width:620px}
@@ -723,6 +710,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <input type="file" id="inpImportar" accept=".json" hidden>
       <button class="btn peligro" id="btnReiniciar">Reiniciar</button>
       <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo">📲</button>
+      <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄</button>
     </div>
   </div>
   <div class="franja"><i></i><i></i><i></i><i></i><i></i></div>
@@ -858,7 +846,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.12 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.14 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2248,10 +2236,12 @@ const DIAS_PIN = 7;
 /* Los tramos del semáforo, en días que faltan. El pin es el único aviso de la
    app, así que acá se define de una vez qué es urgente. */
 const SEM_ROJO = 2, SEM_AMBAR = 4;
-/* Ventana de los contadores del calendario compartido: la burbuja de la solapa y
-   el número de cada grupo. Va igual que DIAS_PIN para que no digan cosas
-   distintas, pero se declara aparte porque cuentan, no avisan. */
-const GR_DIAS_AVISO = 7;
+/* Una sola ventana para todo lo que la app llama "próximo": las burbujas de las
+   dos solapas, la sección «Próximos días» de la agenda, la de «Eventos próximos»
+   del grupo y los contadores de cada grupo. Antes la agenda contaba 10 días y el
+   compartido 7, así que los dos números decían cosas distintas sin que se
+   notara por qué. */
+const DIAS_PROXIMO = 7;
 const semaforo = d => d <= SEM_ROJO ? "rojo" : d <= SEM_AMBAR ? "ambar" : "verde";
 
 /* Cada entrada con sus días calculados. ini<=0 significa que ya arrancó; fin<0,
@@ -2503,7 +2493,6 @@ function burbujaHTML(e){
 /* Umbrales, en un solo lugar: la burbuja de la pestaña "Eventos próximos" y el
    bloque destacado de la Agenda salen de acá. */
 const DIAS_URGENTE = 5;   // burbuja indicadora + pestaña Eventos próximos
-const DIAS_PROXIMO = 10;  // bloque destacado dentro de Agenda
 
 const examenesOrdenados = () => (ST.examenes||[])
   .filter(e=>e&&typeof e.fecha==="string")
@@ -2826,10 +2815,9 @@ function actualizarBadge(){
   const pintar=(sel,n)=>{ const b=$(sel); if(!b) return; b.hidden=!n; b.textContent=n?n:""; };
   pintar("#badgeAgenda", cuenta(DIAS_PROXIMO));
 
-  /* La solapa del compartido usa la misma idea: cuántos eventos se vienen. Se
-     suman los de todos los grupos, sin repetir el mismo evento si aparece en
-     más de uno. El umbral es el propio del grupo (GR_DIAS_AVISO), que es el que
-     ya usa su aviso "Se acerca en el grupo". */
+  /* La del compartido cuenta con el MISMO criterio: eventos que faltan, dentro de
+     la misma ventana. Lo único que agrega es no repetir un evento que esté en
+     más de un grupo. */
   const vistos = new Set();
   let nGr = 0;
   for (const ev of (grEventosTodos || [])){
@@ -2838,7 +2826,7 @@ function actualizarBadge(){
     if (vistos.has(clave)) continue;
     vistos.add(clave);
     const d = diasHasta(ev.fecha);
-    if (d >= 0 && d <= GR_DIAS_AVISO) nGr++;
+    if (d >= 0 && d <= DIAS_PROXIMO) nGr++;
   }
   pintar("#badgeCompartido", nGr);
 }
@@ -3051,6 +3039,22 @@ $("#inpImportar").onchange=e=>{
 /* Fuerza la búsqueda de una versión nueva. El service worker sirve el HTML por
    red primero, así que normalmente alcanza con reabrir; esto es para cuando el
    navegador o la app instalada se quedaron con la copia guardada. */
+/* Busca una versión nueva a pedido. El aviso emergente aparece solo cuando el
+   navegador detecta el cambio; esto es para cuando uno sospecha que está viendo
+   algo viejo y no quiere esperar. */
+$("#btnActualizarApp").onclick=async()=>{
+  toast("Buscando actualizaciones…");
+  try {
+    if ("serviceWorker" in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      // update() vuelve a pedir el sw al servidor; si cambió, se instala el nuevo
+      await Promise.all(regs.map(r => r.update().catch(()=>{})));
+      for (const r of regs) if (r.waiting) r.waiting.postMessage("actualizar-ya");
+    }
+  } catch(e){}
+  setTimeout(()=>location.reload(), 600);
+};
+
 $("#btnReiniciar").onclick=()=>{
   if (confirm("¿Borrar TODO tu estado (materias, horario, agenda y simulador)? Esta acción no se puede deshacer.\nTip: exportá antes por las dudas."))
     { ST={version:1,estados:{},notas:{},aplazos:{},grilla:{},sim:{asumir:true,anios:[]},manuales:[],horarios:null,examenes:[],_mseq:0,_eseq:0}; COMISIONES=construirComisiones(COMISIONES_RAW.comisiones); guardar(); render(); }
@@ -3259,7 +3263,9 @@ function grModalEvento(ev){
     <h3>${ev?"Editar":"Nuevo"} evento del grupo</h3>
     <div class="sub">Lo van a ver las ${g.miembros.length} personas de "${escHTML(g.nombre)}".</div>
     <section><b>Materia</b>
-      <div id="geMatCont"></div></section>
+      <select id="geMateria" class="inp-form">
+        ${grOpcionesMateria(e.titulo)}
+      </select></section>
     <section style="display:flex;gap:10px;flex-wrap:wrap">
       <div style="flex:1 1 150px"><b>Fecha</b>
         <input id="geFecha" class="inp-form" type="date" value="${escHTML(e.fecha)}"></div>
@@ -3277,13 +3283,10 @@ function grModalEvento(ev){
     </div>`;
   $("#velo").classList.add("abierto");
   // al editar, se recupera la materia a partir del título guardado
-  grMatElegida = ev ? (MATERIAS.find(m => norm(m.nombre) === norm(ev.titulo)) || null) : null;
-  grMatMarcada = 0;
-  grPintarBusqueda();
   $("#geGuardar").onclick = async () => {
     const fecha = $("#geFecha").value;
-    if (!grMatElegida) return toast("Elegí una materia de la lista");
-    const titulo = grMatElegida.nombre;
+    const titulo = $("#geMateria").value;
+    if (!titulo) return toast("Elegí una materia de la lista");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return toast("Elegí una fecha");
     const datos = { titulo: titulo.slice(0,120), fecha, hora: $("#geHora").value || "",
       tipo: $("#geTipo").value, detalle: $("#geDetalle").value.trim().slice(0,500),
@@ -3356,56 +3359,27 @@ function grEditarAvatar(){
 
 /* ================= SELECTOR DE MATERIA =================
    El título sale del plan, no se escribe libre: así todos usan el mismo nombre
-   y los eventos de una materia quedan reconocibles entre sí. */
-let grMatElegida = null, grMatMarcada = 0;
-function grBuscarMaterias(txt){
-  const t = norm(txt);
-  if (t.length < 2) return [];
-  const empieza = [], contiene = [];
-  for (const m of MATERIAS){
-    const n = norm(m.nombre);
-    if (n.startsWith(t)) empieza.push(m);
-    else if (n.includes(t)) contiene.push(m);
-  }
-  return [...empieza, ...contiene].slice(0, 30);
-}
-function grPintarBusqueda(){
-  const cont = $("#geMatCont"); if (!cont) return;
-  if (grMatElegida){
-    cont.innerHTML = `<div class="gr-elegida">📘 ${escHTML(grMatElegida.nombre)}
-      <button id="geQuitar" title="Elegir otra materia">✕</button></div>`;
-    $("#geQuitar").onclick = () => { grMatElegida = null; grPintarBusqueda(); };
-    return;
-  }
-  cont.innerHTML = `<div class="gr-busca">
-    <input id="geBusca" class="inp-form" autocomplete="off" placeholder="Escribí dos letras: anal, fis, quim…">
-    <div id="geLista"></div></div>`;
-  const inp = $("#geBusca");
-  const pintar = () => {
-    const res = grBuscarMaterias(inp.value);
-    const l = $("#geLista");
-    if (!res.length){
-      l.innerHTML = norm(inp.value).length >= 2
-        ? `<div class="gr-lista"><div class="gr-nada" style="padding:9px 11px">Ninguna materia del plan coincide.</div></div>` : "";
-      return;
-    }
-    if (grMatMarcada >= res.length) grMatMarcada = 0;
-    l.innerHTML = `<div class="gr-lista">${res.map((m,i) =>
-      `<button data-o="${m.o}" class="${i===grMatMarcada?"marcada":""}">${escHTML(m.nombre)}<span class="niv">${
-        m.electiva?"electiva":"nivel "+m.nivel}</span></button>`).join("")}</div>`;
-    $$("#geLista button").forEach(b => b.onclick = () => {
-      grMatElegida = porOrden[+b.dataset.o]; grPintarBusqueda();
-    });
-  };
-  inp.oninput = () => { grMatMarcada = 0; pintar(); };
-  inp.onkeydown = ev => {
-    const res = grBuscarMaterias(inp.value);
-    if (ev.key === "ArrowDown"){ ev.preventDefault(); grMatMarcada = Math.min(grMatMarcada+1, res.length-1); pintar(); }
-    else if (ev.key === "ArrowUp"){ ev.preventDefault(); grMatMarcada = Math.max(grMatMarcada-1, 0); pintar(); }
-    else if (ev.key === "Enter"){ ev.preventDefault();
-      if (res[grMatMarcada]){ grMatElegida = res[grMatMarcada]; grPintarBusqueda(); } }
-  };
-  pintar();
+   y los eventos de una materia quedan reconocibles entre sí.
+
+   Es la MISMA lista que usa la agenda personal para cargar un examen: las que
+   estás cursando primero y el resto abajo. Antes acá había un buscador que
+   obligaba a escribir al menos dos letras, así que la misma tarea se hacía de
+   dos maneras distintas según la pestaña. */
+function grOpcionesMateria(titulo){
+  const abc = (a,b) => a.nombre.localeCompare(b.nombre,"es");
+  const cursando = MATERIAS.filter(m => est(m.o) === "cursando").sort(abc);
+  const resto    = MATERIAS.filter(m => est(m.o) !== "cursando").sort(abc);
+  const elegido  = norm(titulo || "");
+  const opt = m => `<option value="${escHTML(m.nombre)}"${norm(m.nombre)===elegido?" selected":""}>${escHTML(m.nombre)}</option>`;
+  /* Un evento que vino de otro integrante puede tener un título que no está en
+     el plan —por ejemplo si lo cargó una versión anterior—. Se ofrece igual, así
+     editarlo no obliga a cambiarle el nombre. */
+  const ajeno = titulo && !MATERIAS.some(m => norm(m.nombre) === elegido)
+    ? `<option value="${escHTML(titulo)}" selected>${escHTML(titulo)}</option>` : "";
+  return `<option value="" ${titulo?"":"selected"} disabled>Elegí una materia…</option>`
+    + ajeno
+    + (cursando.length ? `<optgroup label="Estás cursando">${cursando.map(opt).join("")}</optgroup>` : "")
+    + `<optgroup label="${cursando.length?"Otras materias":"Materias"}">${resto.map(opt).join("")}</optgroup>`;
 }
 
 /* ================= COMENTARIOS Y CHAT =================
@@ -3413,7 +3387,7 @@ function grPintarBusqueda(){
    edita: se escribe o se borra, así nadie cambia lo que los demás ya leyeron. */
 let grComentarios = {}, grEvAbierto = null, grConteos = {};
 /* Resumen de cada grupo para las burbujas del selector: cuántos eventos vencen
-   dentro de GR_DIAS_AVISO días y cuántos mensajes hay sin leer. Lo "sin leer" se
+   dentro de la ventana de "próximos" y cuántos mensajes hay sin leer. Lo "sin leer" se
    mide contra la última vez que se miró ese grupo, guardada en ST. */
 let grResumen = {};
 /* Eventos de TODOS los grupos juntos: es lo que alimenta la burbuja de la
@@ -3452,7 +3426,7 @@ async function grCargarResumen(){
       const lista = se.docs.map(d => ({ ...d.data(), grupo: g.nombre, gid: g.id }));
       grEventosTodos.push(...lista);
       evs = lista.filter(x => { const n = diasHasta(x.fecha);
-        return n >= 0 && n <= GR_DIAS_AVISO; }).length;
+        return n >= 0 && n <= DIAS_PROXIMO; }).length;
     } catch(_){}
     grResumen[g.id] = { evs };
   }
@@ -3531,7 +3505,7 @@ function grGrupoHTML(titulo, evs, g, extra){
 function grProximosHTML(evs){
   const cerca = evs
     .map(e => ({ ...e, d: diasHasta(e.fecha) }))
-    .filter(e => e.d >= 0 && e.d <= GR_DIAS_AVISO)
+    .filter(e => e.d >= 0 && e.d <= DIAS_PROXIMO)
     .sort((a,b) => a.d - b.d);
   if (!cerca.length) return "";
   const it = e => `<div class="it${e.d<=INMINENTE?" urg":""}">

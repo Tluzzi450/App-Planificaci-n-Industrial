@@ -13,7 +13,7 @@
  *
  * Ya no maneja notificaciones push: ese módulo se quitó de la app.
  */
-const VERSION = "2026.10.12";
+const VERSION = "2026.10.14";
 const CACHE = "planificador-industrial-" + VERSION;
 
 const ESENCIALES = [
