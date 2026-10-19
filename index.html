@@ -891,7 +891,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.19 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.20 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2163,10 +2163,6 @@ function renderAvance(){
       <div class="tile-cab"><b>${promTxt}</b>
         <button class="met-link" id="verMetricas" aria-expanded="${metricasAbierto}">Métricas</button></div>
       <span>promedio · ${promSub}</span><div class="mini-borde" style="background:var(--verde)"></div></div>
-    ${conNota.length+totApl ? `<div class="tile" title="Finales aprobados sobre el total de intentos, contando los aplazos que cargaste">
-      <b>${Math.round(100*conNota.length/(conNota.length+totApl))}%</b>
-      <span>aprobados en primera</span><div class="mini-borde" style="background:var(--cyan)"></div></div>` : ""}
-    <div class="tile"><b>${rendibles.length}</b><span>finales rendibles hoy</span><div class="mini-borde" style="background:var(--magenta)"></div></div>
     <div class="tile"><b>${nReg}</b><span>finales pendientes</span><div class="mini-borde" style="background:var(--ambar)"></div></div>
     <div class="tile"><b>${nCur}</b><span>cursando ahora</span><div class="mini-borde" style="background:var(--cyan)"></div></div>
     ${ELECTIVAS_HS?`<div class="tile"><b>${electivasHs()}/${ELECTIVAS_HS}</b><span>hs de electivas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--magenta) ${100*electivasHs()/ELECTIVAS_HS}%,var(--track) 0)"></div></div>`:""}`;
