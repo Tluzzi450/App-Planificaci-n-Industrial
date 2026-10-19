@@ -520,8 +520,8 @@ html[data-tema="oscuro"] .sim-corr.libre{background:#3a2c08;border-color:#7a5c12
 .tile-cab{display:flex;align-items:baseline;gap:10px}
 .tile-cab b{display:inline-block}
 .met-link{border:none;background:none;color:var(--acento);font-weight:800;font-size:12px;
-  font-family:inherit;padding:0 0 1px;border-bottom:1px dashed var(--acento);white-space:nowrap}
-.met-link:hover{color:var(--petrol);border-bottom-color:var(--petrol)}
+  font-family:inherit;padding:0;white-space:nowrap}
+.met-link:hover{color:var(--petrol)}
 .met-panel{margin-bottom:18px}
 .met-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
   padding:15px 17px;box-shadow:var(--sombra);margin-bottom:12px}
@@ -538,11 +538,10 @@ html[data-tema="oscuro"] .sim-corr.libre{background:#3a2c08;border-color:#7a5c12
   background:var(--suave);color:var(--muted);white-space:nowrap;flex:none}
 .met-barra{height:6px;border-radius:99px;background:var(--linea);width:110px;flex:none;overflow:hidden}
 .met-barra i{display:block;height:100%;border-radius:99px}
-.met-histo{display:flex;align-items:flex-end;gap:7px;height:108px}
-.met-histo .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+.met-histo{display:flex;align-items:flex-end;justify-content:flex-start;gap:7px;height:108px}
+.met-histo .col{flex:1 1 0;max-width:62px;display:flex;flex-direction:column;align-items:center;gap:5px;
   height:100%;justify-content:flex-end}
 .met-histo .b{width:100%;border-radius:4px 4px 0 0;background:var(--acento);min-height:2px}
-.met-histo .b.cero{background:var(--linea)}
 .met-histo .n{font-size:10.5px;font-weight:800;color:var(--gris)}
 .met-histo .c{font-size:10px;font-weight:700;color:var(--muted);height:12px}
 .met-vacio{background:var(--blanco);border:1px dashed var(--borde);border-radius:12px;
@@ -837,7 +836,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
       <div>
         <div class="ag-export">
           <button class="btn" id="btnIcsExamenes">📅 Exportar todo al calendario</button>
-          <span class="nota">con avisos 5, 2 y 1 día antes</span>
+          <span class="nota">Con avisos 5, 2 y 1 día antes</span>
         </div>
         <div class="ag-modos" id="agModos"></div>
         <div id="proximos10"></div>
@@ -875,7 +874,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     <div id="panelMetricas" hidden></div>
     <div class="panel" style="margin-bottom:16px">
       <div class="cab"><h3>Qué te conviene hacer ahora</h3>
-        <small style="color:var(--gris);font-weight:600">ordenado por cuántas materias te destraba</small></div>
+        <small style="color:var(--gris);font-weight:600">Ordenado por cuántas materias te destraba</small></div>
       <div id="listaRecom"></div>
     </div>
     <div class="panel" style="margin-bottom:16px">
@@ -891,7 +890,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.20 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.21 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -993,7 +992,7 @@ function chipsOrigen(c){
   let s = "";
   if (c.carrera && c.carrera !== HOR.carrera && !/^[A-Z]{1,2}(-R)?$/.test(c.curso))
     s += ` <span class='chip chip-compartida'>${escHTML(c.carrera)}</span>`;
-  if (c.recursantes) s += " <span class='chip chip-bloq'>recursantes</span>";
+  if (c.recursantes) s += " <span class='chip chip-bloq'>Recursantes</span>";
   return s;
 }
 
@@ -1080,6 +1079,10 @@ function esCuatrimestral(o){ const cs=comsDe(o); return cs.length>0 && cs.every(
 const electivasHs = () => MATERIAS.filter(m=>m.electiva&&aprobada(m.o)).reduce((t,m)=>t+hsElectiva(m),0);
 
 /* ================= NAVEGACIÓN ================= */
+/* En español los meses y los días van en minúscula dentro de una oración,
+   pero acá encabezan una línea propia: "Octubre de 2026", "Viernes, 23 de
+   octubre". cap() sube sólo la primera letra, sin tocar el resto. */
+const cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let vista="materias";
@@ -1150,7 +1153,7 @@ function renderMaterias(){
     const extra = g.elec
       ? (ELECTIVAS_HS ? `<small>${electivasHs()} / ${ELECTIVAS_HS} hs electivas</small>`
                       : `<small>${apr}/${g.ms.length} aprobadas</small>`)
-      : `<small>${apr}/${g.ms.length} aprobadas</small><button class="btn-mini" data-nivel="${g.tit}">marcar todo aprobado</button>`;
+      : `<small>${apr}/${g.ms.length} aprobadas</small><button class="btn-mini" data-nivel="${g.tit}">Marcar todo aprobado</button>`;
     cab.innerHTML=`<h3>${g.tit}</h3><div class="barra"><i style="width:${100*apr/g.ms.length}%"></i></div>${extra}`;
     const btn=cab.querySelector("button");
     if(btn) btn.onclick=()=>{ if(confirm(`¿Marcar todas las materias de ${g.tit} como aprobadas?`)){
@@ -1278,7 +1281,7 @@ $("#btnAutogestion").onclick=()=>{
             <span class="pill ${ESTADOS[d.estado].cls}" style="margin-left:6px">${ESTADOS[d.estado].txt}</span>
             ${d.nota!=null?`<span class="chip chip-cursable">nota ${d.nota}</span>`:""}
             ${d.comision?`<span class="chip chip-rendible">comisión ${d.comision}</span>`:""}
-            ${d.inferido?`<span class="chip chip-compartida" title="La línea no decía el estado; lo deduje porque tenía nota y fecha. Revisalo.">deducido</span>`:""}
+            ${d.inferido?`<span class="chip chip-compartida" title="La línea no decía el estado; lo deduje porque tenía nota y fecha. Revisalo.">Deducido</span>`:""}
           </span></label>`).join("")}
       </div>
       ${sinEstado?`<div style="font-size:12.5px;color:var(--gris);font-weight:600;margin-top:6px">
@@ -1344,9 +1347,9 @@ function abrirModal(o){
       ${d.dr.length?`<div style="font-size:13px">📝 Para rendir: <b>${nombres(d.dr)}</b></div>`:""}</section>`:""}
     <section><b>Comisiones ${CICLO}</b>${ coms.length ? coms.map(cc=>`
       <div style="font-size:13px;padding:4px 0;border-bottom:1px dashed var(--linea)">
-        <b>${escHTML(cc.curso)}</b>${cc.compartida?` <span class="chip chip-compartida" title="No hay comisión propia del plan 2023 este ciclo; es la misma clase que dicta el plan anterior.">compartida plan 94</span>`:""}
+        <b>${escHTML(cc.curso)}</b>${cc.compartida?` <span class="chip chip-compartida" title="No hay comisión propia del plan 2023 este ciclo; es la misma clase que dicta el plan anterior.">Compartida plan 94</span>`:""}
         ${cc.dictado==="1"?`<span class="chip chip-bloq">1.º cuat.</span>`:cc.dictado==="2"?`<span class="chip chip-bloq">2.º cuat.</span>`:""}
-        ${cc.modalidad==="virtual"?`<span class="chip chip-cursable">virtual</span>`:""}
+        ${cc.modalidad==="virtual"?`<span class="chip chip-cursable">Virtual</span>`:""}
         ${chipsOrigen(cc)}
         — ${cc.bloques.map(b=>`${DIAS[b.dia]} ${hm(b.inicio)}–${hm(b.fin)}${b.aula&&b.aula!=="Virtual"?` (Aula ${escHTML(b.aula)})`:""}`).join(" · ")}
         ${cc.docentes.length?`<small style="display:block;color:var(--gris)">${escHTML(cc.docentes.join(" · "))}</small>`:""}
@@ -1406,11 +1409,11 @@ function renderGrillaLista(){
     const el=document.createElement("div"); el.className="mat-item";
     const elegida=ST.grilla[m.o];
     el.innerHTML=`<div class="fila"><span class="punto" style="background:${colorMateria(m.o)}"></span>
-      <span class="nom">${m.nombre}</span>${elegida?`<button class="btn-mini" data-quitar>quitar</button>`:""}</div>
+      <span class="nom">${m.nombre}</span>${elegida?`<button class="btn-mini" data-quitar>Quitar</button>`:""}</div>
       <div class="coms">${comsVisibles(m.o).length ? comsVisibles(m.o).map(c=>`
         <label class="com-op ${elegida===claveCom(c)?"elegida":""}">
           <input type="radio" name="com-${m.o}" ${elegida===claveCom(c)?"checked":""} data-com="${claveCom(c)}" data-o="${m.o}">
-          <span><b>${escHTML(c.curso)}</b>${c.manual?" <span class='chip chip-rendible'>otra regional</span>":""}${c.compartida?" <span class='chip chip-compartida'>plan 94</span>":""}${c.dictado==="1"?" <span class='chip chip-bloq'>1.ºC</span>":c.dictado==="2"?" <span class='chip chip-bloq'>2.ºC</span>":""}${c.modalidad==="virtual"?" <span class='chip chip-cursable'>virtual</span>":""}${chipsOrigen(c)}<br>
+          <span><b>${escHTML(c.curso)}</b>${c.manual?" <span class='chip chip-rendible'>Otra regional</span>":""}${c.compartida?" <span class='chip chip-compartida'>Plan 94</span>":""}${c.dictado==="1"?" <span class='chip chip-bloq'>1.ºC</span>":c.dictado==="2"?" <span class='chip chip-bloq'>2.ºC</span>":""}${c.modalidad==="virtual"?" <span class='chip chip-cursable'>Virtual</span>":""}${chipsOrigen(c)}<br>
           <span class="det">${c.bloques.map(b=>`${DIAS[b.dia].slice(0,3)} ${hm(b.inicio)}–${hm(b.fin)}`).join(" · ")}</span></span>
         </label>`).join("") : `<div class="sin-coms">Ninguna comisión con los filtros puestos.</div>`}</div>`;
     el.querySelectorAll("input[type=radio]").forEach(r=>r.onchange=()=>{
@@ -1545,9 +1548,9 @@ function renderExternas(){
       <span class="punto" style="background:${o!==undefined?colorMateria(o):'#7D9FAB'}"></span>
       <span class="nom">${escHTML(m.materia)}</span>
       <span class="chip chip-rendible">${escHTML(m.regional)||"—"}</span>
-      ${enGrilla?`<span class="chip chip-cursable">en la grilla</span>`:`<button class="btn-mini" data-usar="${m.mid}">usar</button>`}
-      <button class="btn-mini" data-edit="${m.mid}">editar</button>
-      <button class="btn-mini" data-del="${m.mid}">eliminar</button>
+      ${enGrilla?`<span class="chip chip-cursable">En la grilla</span>`:`<button class="btn-mini" data-usar="${m.mid}">Usar</button>`}
+      <button class="btn-mini" data-edit="${m.mid}">Editar</button>
+      <button class="btn-mini" data-del="${m.mid}">Eliminar</button>
       <span class="det">${m.profesor?escHTML(m.profesor)+" · ":""}${(m.bloques||[]).map(b=>`${DIAS[b.dia].slice(0,3)} ${hm(b.inicio)}–${hm(b.fin)}${b.aula?" ("+escHTML(b.aula)+")":""}`).join(" · ")}</span>
     </div>`;
   }).join("");
@@ -1736,7 +1739,7 @@ $("#btnOptimizar").onclick=()=>{
       <div><b>Días que querés libres</b><div style="display:flex;gap:8px;flex-wrap:wrap">
         ${dias.map(d=>`<label style="font-size:13px;font-weight:600"><input type="checkbox" class="opDia" value="${d}"> ${DIAS[d].slice(0,3)}</label>`).join("")}
       </div></div>
-      <div><b>Tope de horas</b><br><input id="opMaxHs" class="nota-input" type="number" min="4" max="40" placeholder="sin tope" style="width:100px"></div>
+      <div><b>Tope de horas</b><br><input id="opMaxHs" class="nota-input" type="number" min="4" max="40" placeholder="Sin tope" style="width:100px"></div>
     </section>
     <div id="optError" class="aviso" style="display:none"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
@@ -1763,8 +1766,8 @@ $("#btnOptimizar").onclick=()=>{
         <div class="top"><b>Opción ${i+1}</b>
           <span class="cd">${op2.cant} materias · ${op2.hs} hs</span>
           <span class="chip chip-bloq">${op2.dias} día${op2.dias>1?"s":""} en la facu</span>
-          ${op2.huecos?`<span class="chip chip-bloq">${Math.round(op2.huecos/60*10)/10} h libres entre clases</span>`:`<span class="chip chip-cursable">sin ventanas</span>`}
-          <button class="btn-mini" data-aplicar="${i}" style="margin-left:auto">aplicar</button></div>
+          ${op2.huecos?`<span class="chip chip-bloq">${Math.round(op2.huecos/60*10)/10} h libres entre clases</span>`:`<span class="chip chip-cursable">Sin ventanas</span>`}
+          <button class="btn-mini" data-aplicar="${i}" style="margin-left:auto">Aplicar</button></div>
         <div class="hab">${op2.combo.map(c=>`${escHTML(porOrden[c.orden].nombre)} <small>(${escHTML(c.curso)}: ${c.bloques.map(b=>DIAS[b.dia].slice(0,3)+" "+hm(b.inicio)).join(", ")})</small>`).join(" · ")}</div>
       </div>`).join("");
     cont.querySelectorAll("[data-aplicar]").forEach(b=>b.onclick=()=>{
@@ -2077,21 +2080,24 @@ function metricasHTML(){
     <div class="met-q">Cuántas materias pasarías a poder cursar al aprobar cada una.</div>
     ${des.map((d,i) => `<div class="met-fila">
       <span class="nom">${escHTML(d.m.nombre)}</span>
-      ${i===0 && d.n>1 ? `<span class="met-chip">cuello de botella</span>` : ""}
-      <span class="val">habilita ${d.n}</span></div>`).join("")}
+      ${i===0 && d.n>1 ? `<span class="met-chip">Cuello de botella</span>` : ""}
+      <span class="val">Habilita ${d.n}</span></div>`).join("")}
   </div>`;
 
   /* ---- distribución de notas ---- */
   const cuenta = {};
-  for (let n = 4; n <= 10; n++) cuenta[n] = 0;
-  for (const m of conNota){ const n = Math.round(ST.notas[m.o]); if (cuenta[n] != null) cuenta[n]++; }
+  for (const m of conNota){
+    const n = Math.round(ST.notas[m.o]);
+    if (n >= 4 && n <= 10) cuenta[n] = (cuenta[n]||0) + 1;
+  }
+  const notasUsadas = Object.keys(cuenta).map(Number).sort((a,b) => a-b);
   const maxC = Math.max(1, ...Object.values(cuenta));
-  const bloqHist = !conNota.length ? "" : `<div class="met-caja">
+  const bloqHist = !notasUsadas.length ? "" : `<div class="met-caja">
     <h4>📊 Distribución de notas</h4>
     <div class="met-q">El promedio solo no distingue notas parejas de extremos.</div>
-    <div class="met-histo">${Object.entries(cuenta).map(([n,c]) => `<div class="col">
-      <span class="c">${c||""}</span>
-      <div class="b${c?"":" cero"}" style="height:${c?Math.round(100*c/maxC):0}%"></div>
+    <div class="met-histo">${notasUsadas.map(n => `<div class="col">
+      <span class="c">${cuenta[n]}</span>
+      <div class="b" style="height:${Math.round(100*cuenta[n]/maxC)}%"></div>
       <span class="n">${n}</span></div>`).join("")}</div>
   </div>`;
 
@@ -2157,15 +2163,15 @@ function renderAvance(){
   const promSub = prom==null ? "cargá notas en cada materia"
     : `sobre ${conNota.length} final${conNota.length>1?"es":""}${totApl?` · c/aplazos ${promCA.toFixed(2)}`:""}`;
   $("#tilesAvance").innerHTML=`
-    <div class="tile"><b>${nAprob}/${oblig.length}</b><span>obligatorias aprobadas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--verde) ${100*nAprob/oblig.length}%,var(--track) 0)"></div></div>
-    <div class="tile"><b>${Math.round(100*hsAprob/hsTot)}%</b><span>de la carga horaria</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--acento) ${100*hsAprob/hsTot}%,var(--track) 0)"></div></div>
+    <div class="tile"><b>${nAprob}/${oblig.length}</b><span>Obligatorias aprobadas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--verde) ${100*nAprob/oblig.length}%,var(--track) 0)"></div></div>
+    <div class="tile"><b>${Math.round(100*hsAprob/hsTot)}%</b><span>De la carga horaria</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--acento) ${100*hsAprob/hsTot}%,var(--track) 0)"></div></div>
     <div class="tile" title="Promedio de las notas de finales aprobados${totApl?". «c/aplazos» cuenta cada aplazo como un 2.":""}">
       <div class="tile-cab"><b>${promTxt}</b>
         <button class="met-link" id="verMetricas" aria-expanded="${metricasAbierto}">Métricas</button></div>
-      <span>promedio · ${promSub}</span><div class="mini-borde" style="background:var(--verde)"></div></div>
-    <div class="tile"><b>${nReg}</b><span>finales pendientes</span><div class="mini-borde" style="background:var(--ambar)"></div></div>
-    <div class="tile"><b>${nCur}</b><span>cursando ahora</span><div class="mini-borde" style="background:var(--cyan)"></div></div>
-    ${ELECTIVAS_HS?`<div class="tile"><b>${electivasHs()}/${ELECTIVAS_HS}</b><span>hs de electivas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--magenta) ${100*electivasHs()/ELECTIVAS_HS}%,var(--track) 0)"></div></div>`:""}`;
+      <span>Promedio · ${promSub}</span><div class="mini-borde" style="background:var(--verde)"></div></div>
+    <div class="tile"><b>${nReg}</b><span>Finales pendientes</span><div class="mini-borde" style="background:var(--ambar)"></div></div>
+    <div class="tile"><b>${nCur}</b><span>Cursando ahora</span><div class="mini-borde" style="background:var(--cyan)"></div></div>
+    ${ELECTIVAS_HS?`<div class="tile"><b>${electivasHs()}/${ELECTIVAS_HS}</b><span>Hs de electivas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--magenta) ${100*electivasHs()/ELECTIVAS_HS}%,var(--track) 0)"></div></div>`:""}`;
   /* El panel va debajo de las fichas, no adentro: ocupa el ancho completo. */
   const pm = $("#panelMetricas");
   if (pm){
@@ -2178,7 +2184,7 @@ function renderAvance(){
   renderMesas();
   $("#listaRendibles").innerHTML = rendibles.length
     ? rendibles.map(m=>{const d=destraba(m.o);return `<div class="fila-lista"><span class="nom">${m.nombre}</span>
-        ${d.dc.length+d.dr.length?`<span class="chip chip-cursable">destraba ${d.dc.length+d.dr.length}</span>`:""}
+        ${d.dc.length+d.dr.length?`<span class="chip chip-cursable">Destraba ${d.dc.length+d.dr.length}</span>`:""}
         <span class="pill est-regular">Regularizada</span></div>`;}).join("")
     : `<p style="padding:13px;color:var(--gris);font-weight:600">No tenés finales habilitados ahora mismo.</p>`;
   renderRecom();
@@ -2244,17 +2250,17 @@ function renderRecom(){
              terminar:{txt:"Aprobarla (la estás cursando)",cls:"chip-cursable"}};
   cont.innerHTML=cand.slice(0,8).map((c,i)=>{
     const abre=[];
-    if (c.abreC.length) abre.push(`habilita a cursar <b>${nombres(c.abreC)}</b>`);
-    if (c.abreR.length) abre.push(`habilita a rendir <b>${nombres(c.abreR)}</b>`);
+    if (c.abreC.length) abre.push(`Habilita a cursar <b>${nombres(c.abreC)}</b>`);
+    if (c.abreR.length) abre.push(`Habilita a rendir <b>${nombres(c.abreR)}</b>`);
     const det = abre.length ? abre.join(" · ")
-      : c.cascada ? `no destraba nada de inmediato, pero está antes de ${c.cascada} materia${c.cascada>1?"s":""} del plan`
-      : "no es correlativa de ninguna otra materia";
+      : c.cascada ? `No destraba nada de inmediato, pero está antes de ${c.cascada} materia${c.cascada>1?"s":""} del plan`
+      : "No es correlativa de ninguna otra materia";
     return `<div class="mesa" ${i===0?'style="background:var(--hover)"':''}>
       <div class="top">
         ${i===0?'<span class="chip chip-cursable">★ prioridad</span>':`<span class="chip chip-bloq">${i+1}</span>`}
         <b style="cursor:pointer" data-abrir="${c.m.o}">${c.m.nombre}</b>
         <span class="chip ${ETQ[c.accion].cls}">${ETQ[c.accion].txt}</span>
-        ${(c.abreC.length+c.abreR.length)?`<span class="cd">destraba ${c.abreC.length+c.abreR.length}</span>`:""}
+        ${(c.abreC.length+c.abreR.length)?`<span class="cd">Destraba ${c.abreC.length+c.abreR.length}</span>`:""}
       </div>
       <div class="hab">${det}</div></div>`;
   }).join("");
@@ -2310,13 +2316,13 @@ function renderMesas(){
   if(!prox.length){ cont.innerHTML=`<p style="padding:13px;color:var(--gris);font-weight:600">No hay mesas futuras en el calendario cargado.</p>`; return; }
   cont.innerHTML=prox.slice(0,4).map(x=>{
     const dias=x.diasParaMesa;
-    const cd = dias<=0?"en curso":dias===1?"mañana":`en ${dias} días`;
+    const cd = dias<=0?"En curso":dias===1?"Mañana":`En ${dias} días`;
     const insc = x.insc==="abierta"
-        ? `<span class="cd ${x.diasParaCierre<=3?"prox":""}">✅ inscripción abierta · cierra ${x.diasParaCierre===0?"hoy":"en "+x.diasParaCierre+" días"}</span>`
+        ? `<span class="cd ${x.diasParaCierre<=3?"prox":""}">✅ Inscripción abierta · cierra ${x.diasParaCierre===0?"hoy":"en "+x.diasParaCierre+" días"}</span>`
       : x.insc==="futura"
-        ? `<span class="chip chip-bloq">inscripción del ${fmtF(x.i1)} al ${fmtF(x.i2)}</span>`
+        ? `<span class="chip chip-bloq">Inscripción del ${fmtF(x.i1)} al ${fmtF(x.i2)}</span>`
       : x.insc==="cerrada"
-        ? `<span class="chip chip-bloq">inscripción cerrada el ${fmtF(x.i2)}</span>` : "";
+        ? `<span class="chip chip-bloq">Inscripción cerrada el ${fmtF(x.i2)}</span>` : "";
     return `<div class="mesa"><div class="top">
       <b>${x.nombre}</b>
       <span style="font-size:12.5px;color:var(--muted)">${fmtF(x.d1)} – ${fmtF(x.d2)} · ${x.llamados} llamado${x.llamados>1?"s":""}</span>
@@ -2425,10 +2431,10 @@ const acadFijados = () => acadVigentes().filter(e=>e.ini<=DIAS_PIN);
 const enCurso = e => e.ini<=0 && e.fin>=0;
 
 function cuandoTexto(e){
-  if(e.ini>0)  return e.ini===1 ? "empieza mañana" : `empieza en ${e.ini} días`;
-  if(!e.rango) return "es HOY";
-  if(e.fin===0) return "último día";
-  return e.fin===1 ? "termina mañana" : `termina en ${e.fin} días`;
+  if(e.ini>0)  return e.ini===1 ? "Empieza mañana" : `Empieza en ${e.ini} días`;
+  if(!e.rango) return "Es HOY";
+  if(e.fin===0) return "Último día";
+  return e.fin===1 ? "Termina mañana" : `Termina en ${e.fin} días`;
 }
 const fmtCorto = f => new Date(f+"T00:00").toLocaleDateString("es-AR",{day:"numeric",month:"short"});
 const rangoTexto = e => e.rango ? `${fmtCorto(e.d)} – ${fmtCorto(e.hasta)}` : fmtCorto(e.d);
@@ -2468,7 +2474,7 @@ function avisosProximos(){
     out.push({ d, origen:"propio", et:"Tuyo",
       q: `${nombreMateriaEx(e)} · ${TIPOS_EX[e.tipo]||"Examen"}`,
       f: fmtCorto(e.fecha) + (e.hora ? " · "+e.hora+" hs" : ""),
-      c: d===0 ? "HOY" : d===1 ? "mañana" : "en "+d+" días" });
+      c: d===0 ? "HOY" : d===1 ? "Mañana" : "En "+d+" días" });
   }
   /* El mismo evento puede estar en dos grupos: se muestra una sola vez. */
   const vistos = new Set();
@@ -2482,7 +2488,7 @@ function avisosProximos(){
     out.push({ d, origen:"grupo", et:(e.grupo||"Grupo").slice(0,18),
       q: `${e.titulo||"Evento"} · ${GR_TIPOS[e.tipo]||"Otro"}`,
       f: fmtCorto(e.fecha) + (e.hora ? " · "+e.hora+" hs" : ""),
-      c: d===0 ? "HOY" : d===1 ? "mañana" : "en "+d+" días" });
+      c: d===0 ? "HOY" : d===1 ? "Mañana" : "En "+d+" días" });
   }
   /* Los de la facultad pueden estar en curso: ini<=0. Cuentan como 0, que es lo
      más urgente que hay. */
@@ -2502,7 +2508,9 @@ function renderPin(){
      cuánto falta—, igual que antes. Lo que cambió es a quiénes incluye: lo de
      4 a 7 días vive en el panel, no acá. */
   const cont = $("#pinEventos"); if (!cont) return;
-  if (!urgentes.length){ cont.innerHTML = ""; return; }
+  /* En "Calendario compartido" el pin no va: esa solapa ya tiene su propio
+     aviso de eventos próximos y repetirlo arriba sobra. */
+  if (vista === "compartido" || !urgentes.length){ cont.innerHTML = ""; return; }
   const fila = e => `<div class="pin-it">
     <span class="et${e.origen==="grupo"?" et-gr":""}"${e.origen==="grupo"?' title="Evento de un calendario compartido"':""}>${escHTML(e.et)}</span>
     <span class="q">${escHTML(e.q)}</span>
@@ -2523,7 +2531,7 @@ function diasHasta(f){
   const hoy=new Date(); hoy.setHours(0,0,0,0);
   return Math.round((new Date(f+"T00:00")-hoy)/86400000);
 }
-const fmtFecha = f => new Date(f+"T00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"});
+const fmtFecha = f => cap(new Date(f+"T00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"}));
 function textoCuenta(d){
   if(d===0) return {n:"HOY", s:""};
   if(d===1) return {n:"1", s:"día"};
@@ -2651,9 +2659,9 @@ function burbujaHTML(e){
         title="Abre Google Calendar con los datos cargados">📅 Google Calendar</a>`:""}
       ${d>=0?`<button class="btn-mini compartir" data-comp-ex="${e.id}"
         title="Compartir este examen con un grupo">➕</button>`:""}
-      <button class="btn-mini" data-edit-ex="${e.id}">editar</button>
+      <button class="btn-mini" data-edit-ex="${e.id}">Editar</button>
       ${d<0?`<button class="btn-mini" data-nota-ex="${e.id}">${e.nota!=null?"cambiar nota":"poner nota"}</button>`:""}
-      <button class="btn-mini" data-del-ex="${e.id}">eliminar</button>
+      <button class="btn-mini" data-del-ex="${e.id}">Eliminar</button>
     </div></div>`;
 }
 /* Umbrales, en un solo lugar: la burbuja de la pestaña "Eventos próximos" y el
@@ -2746,7 +2754,7 @@ async function compartirConGrupo(e){
       toast(`Compartido con ${g.nombre}`);
       if (vista === "compartido") grRefrescar();
     } catch(err){
-      b.disabled = false; b.querySelector(".m").textContent = "no se pudo";
+      b.disabled = false; b.querySelector(".m").textContent = "No se pudo";
       toast("No se pudo compartir: " + explicar(err));
     }
   });
@@ -2806,7 +2814,7 @@ function renderCalendario(){
   // getDay() da 0=domingo; la semana acá arranca el lunes
   const corr=(primero.getDay()+6)%7;
   const diasPrev=new Date(calAnio,calMes,0).getDate();
-  const titulo=primero.toLocaleDateString("es-AR",{month:"long",year:"numeric"});
+  const titulo=cap(primero.toLocaleDateString("es-AR",{month:"long",year:"numeric"}));
   let celdas="";
   for(const d of ["L","M","M","J","V","S","D"]) celdas+=`<div class="cal-dow">${d}</div>`;
   for(let i=corr;i>0;i--) celdas+=`<div class="cal-dia otro">${diasPrev-i+1}</div>`;
@@ -2847,9 +2855,9 @@ function renderCalendario(){
     </div>
     <div class="cal-grid">${celdas}</div>
     <div class="cal-ley">
-      <span><i class="cal-pt urgente"></i>tuyo</span>
-      <span><i class="cal-pt acad"></i>calendario</span>
-      <span><i class="cal-pt feriado"></i>no laborable</span>
+      <span><i class="cal-pt urgente"></i>Tuyo</span>
+      <span><i class="cal-pt acad"></i>Calendario</span>
+      <span><i class="cal-pt feriado"></i>No laborable</span>
     </div>
     <div class="cal-pie">${pie}</div>`;
   $("#calPrev").onclick=()=>moverMes(-1);
@@ -2902,7 +2910,7 @@ function agendaPorMes(){
   const futuros=claves.filter(k=>k>=hoyK), pasados=claves.filter(k=>k<hoyK).reverse();
   const titulo=k=>{
     const d=new Date(k+"-01T00:00");
-    const t=d.toLocaleDateString("es-AR",{month:"long",year:"numeric"});
+    const t=cap(d.toLocaleDateString("es-AR",{month:"long",year:"numeric"}));
     return k===hoyK ? t+" · este mes" : t;
   };
   return futuros.map(k=>grupoHTML(titulo(k), g[k])).join("")
@@ -3074,9 +3082,9 @@ function ancestros(o,acc){ acc=acc||new Set(); const c=CORR[o]; if(!c) return ac
 function renderMapa(){
   $("#mapaLeyenda").innerHTML=Object.entries({aprobada:"Aprobada",regular:"Regularizada",cursando:"Cursando",sin:"Sin cursar",desaprobada:"Desaprobada"})
     .map(([k,t])=>`<span class="leyenda-it"><i style="background:${colEst(k).f};border-color:${colEst(k).s}"></i>${t}</span>`).join("")
-    +`<span class="leyenda-it" style="margin-left:8px"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#c8d5db" stroke-width="1.3"/></svg>correlativa de cursada</span>`
-    +`<span class="leyenda-it"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#c8d5db" stroke-width="1.3" stroke-dasharray="3 3"/></svg>debe estar aprobada</span>`
-    +`<span class="leyenda-it" style="margin-left:8px"><i style="background:transparent;border-color:${colEst("sin").s};border-style:dashed"></i>electiva</span>`;
+    +`<span class="leyenda-it" style="margin-left:8px"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#c8d5db" stroke-width="1.3"/></svg>Correlativa de cursada</span>`
+    +`<span class="leyenda-it"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#c8d5db" stroke-width="1.3" stroke-dasharray="3 3"/></svg>Debe estar aprobada</span>`
+    +`<span class="leyenda-it" style="margin-left:8px"><i style="background:transparent;border-color:${colEst("sin").s};border-style:dashed"></i>Electiva</span>`;
   const oblig=MATERIAS.filter(m=>!m.electiva);
   /* Las electivas van en una columna propia a la derecha: no forman una secuencia
      de niveles como las obligatorias, pero sí tienen correlativas hacia ellas. */
@@ -3626,7 +3634,7 @@ const cuandoTxt = iso => {
 function msjHTML(m, g, attr, extra){
   const puedo = m.autor === usuario.uid || g.creador === usuario.uid;
   return `<div class="msj ${extra||""}">
-    <span class="au">${escHTML(m.autor===usuario.uid?"vos":(m.autorNombre||"alguien"))}</span>
+    <span class="au">${escHTML(m.autor===usuario.uid?"Vos":(m.autorNombre||"Alguien"))}</span>
     <span class="tx">${escHTML(m.texto)}</span>
     <span class="cu">${cuandoTxt(m.creado)}</span>
     ${puedo?`<button class="x" ${attr}="${m.id}" title="Eliminar">✕</button>`:""}</div>`;
@@ -3678,7 +3686,7 @@ function grProximosHTML(evs){
     <span class="q">${escHTML(e.titulo)}</span>
     <span class="t">${GR_TIPOS[e.tipo]||"Otro"}</span>
     <span class="f">${fmtFecha(e.fecha)}${e.hora?` · ${e.hora} hs`:""}</span>
-    <span class="c">${e.d===0?"es hoy":e.d===1?"mañana":"en "+e.d+" días"}</span></div>`;
+    <span class="c">${e.d===0?"Es hoy":e.d===1?"Mañana":"En "+e.d+" días"}</span></div>`;
   return `<div class="gr-prox">
     <div class="cab">📅 Eventos próximos <span class="n">${cerca.length}</span>
       <small>7 días o menos</small></div>
@@ -3697,7 +3705,7 @@ function grListadoHTML(fut, pas, g){
     const hoyK = new Date().toISOString().slice(0,7);
     const claves = Object.keys(porMes).sort();
     const tit = k => {
-      const t = new Date(k+"-01T00:00").toLocaleDateString("es-AR",{month:"long",year:"numeric"});
+      const t = cap(new Date(k+"-01T00:00").toLocaleDateString("es-AR",{month:"long",year:"numeric"}));
       return k === hoyK ? t + " · este mes" : t;
     };
     return claves.filter(k=>k>=hoyK).map(k=>grGrupoHTML(tit(k),porMes[k],g)).join("")
@@ -3832,8 +3840,8 @@ function grEventoHTML(e, g){
       ${d>=0?`<a class="btn-mini cal" href="${urlGoogleCalendarGrupo(e, g.nombre)}"
         target="_blank" rel="noopener"
         title="Abre Google Calendar con los datos cargados">📅 Google Calendar</a>`:""}
-      <button class="btn-mini" data-gr-edit="${e.id}">editar</button>
-      ${puedoBorrar?`<button class="btn-mini" data-gr-del="${e.id}">eliminar</button>`:""}
+      <button class="btn-mini" data-gr-edit="${e.id}">Editar</button>
+      ${puedoBorrar?`<button class="btn-mini" data-gr-del="${e.id}">Eliminar</button>`:""}
     </div>
     ${grEvAbierto===e.id ? `<div class="gr-com">
       ${(grComentarios[e.id]||[]).length
@@ -3876,7 +3884,7 @@ function renderCompartido(){
   const pas = grEventos.filter(e => diasHasta(e.fecha) < 0).reverse();
   const nov = novedadesSinVer(g);
   const nombres = (g.miembros||[]).map(u =>
-    `<span class="gr-mi ${u===usuario.uid?"yo":""}">${escHTML(u===usuario.uid?"vos":((g.nombres||{})[u]||"alguien"))}</span>`).join("");
+    `<span class="gr-mi ${u===usuario.uid?"yo":""}">${escHTML(u===usuario.uid?"Vos":((g.nombres||{})[u]||"Alguien"))}</span>`).join("");
 
   c.innerHTML = `
     ${grTabsHTML(g)}
@@ -4238,8 +4246,8 @@ if (syncPosible()){
 function pintarPie(){
   const p=$("#pieModo"); if(!p) return;
   p.textContent = !syncConfigurado() ? "los datos se guardan sólo en este dispositivo"
-    : usuario ? "sincronizado con tu cuenta"
-    : "sin sesión: los datos se guardan sólo en este dispositivo";
+    : usuario ? "Sincronizado con tu cuenta"
+    : "Sin sesión: los datos se guardan sólo en este dispositivo";
 }
 /* ================= ORDEN DE LAS SOLAPAS =================
    El orden vive en ST, así que viaja con la cuenta: si alguien lo acomoda en la
