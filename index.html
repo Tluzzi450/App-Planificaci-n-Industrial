@@ -412,27 +412,37 @@ html[data-tema="oscuro"] .inst-ok{background:#1e3312;border-color:#3c5c26;color:
 html[data-tema="oscuro"] .pin-caja{background:#2b1319}
 html[data-tema="oscuro"] .pin-it .et-gr{background:#24404c;color:#cfe3ec}
 /* ---------- eventos próximos del grupo ---------- */
-/* Tono sobrio, distinto del pin: éste informa, el pin urge. Lo único con color
-   es la cuenta, y en rojo sólo lo que también está en el pin, para que las dos
-   cosas se lean como lo mismo visto de dos maneras. */
-.gr-prox{background:var(--blanco);border:1px solid var(--borde);border-radius:11px;
-  padding:10px 13px;margin-bottom:14px;box-shadow:var(--sombra)}
+/* Ámbar: se despega del blanco de las demás tarjetas sin pisarse con el rojo del
+   pin, que sigue significando "esto aprieta". Antes era una caja blanca más y se
+   perdía entre las otras. */
+.gr-prox{background:#fff8e6;border:1px solid #f0cd7f;border-left:5px solid var(--ambar);
+  border-radius:11px;padding:11px 14px;margin-bottom:14px;box-shadow:var(--sombra)}
 .gr-prox .cab{display:flex;align-items:center;gap:7px;font-weight:800;font-size:13px;
-  color:var(--petrol);margin-bottom:7px}
-.gr-prox .cab .n{background:var(--marca);color:#fff;border-radius:99px;font-size:11px;
-  padding:1px 8px;font-weight:800}
+  color:#8a5a00;margin-bottom:8px}
+/* el número en ámbar oscuro: sobre el puro, el blanco encima da 1.9:1 */
+.gr-prox .cab .n{background:#8a5a00;color:#fff;border-radius:99px;font-size:11.5px;
+  min-width:19px;text-align:center;padding:1px 8px;font-weight:800}
 .gr-prox .cab small{margin-left:auto;font-weight:700;font-size:11px;color:var(--muted)}
 .gr-prox .it{display:flex;align-items:baseline;gap:9px;padding:5px 0;flex-wrap:wrap;
-  border-top:1px solid var(--linea)}
+  border-top:1px solid #f0d9a8}
 .gr-prox .it:first-of-type{border-top:none}
-.gr-prox .it .q{font-weight:700;font-size:13.5px;color:var(--petrol);min-width:0;
+.gr-prox .it .q{font-weight:700;font-size:13.5px;color:#5c3d00;min-width:0;
   flex:1 1 160px;overflow-wrap:anywhere}
 .gr-prox .it .t{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;
-  background:var(--suave);color:var(--muted);flex:none}
-.gr-prox .it .f{font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}
-.gr-prox .it .c{font-size:12px;font-weight:800;color:var(--petrol);white-space:nowrap;
+  background:#f6e8c6;color:#8a5a00;flex:none}
+.gr-prox .it .f{font-size:11.5px;font-weight:600;color:#806226;white-space:nowrap}
+.gr-prox .it .c{font-size:12px;font-weight:800;color:#8a5a00;white-space:nowrap;
   margin-left:auto}
-.gr-prox .it.urg .c{color:var(--rojo)}
+.gr-prox .it.urg .c{color:#b3122f}
+/* En oscuro el ámbar claro encandila: mismo estado, tonos apagados. */
+html[data-tema="oscuro"] .gr-prox{background:#33290d;border-color:#5a4715;border-left-color:#f0cd7f}
+html[data-tema="oscuro"] .gr-prox .cab{color:#f0cd7f}
+html[data-tema="oscuro"] .gr-prox .cab .n{background:#f0cd7f;color:#2b2208}
+html[data-tema="oscuro"] .gr-prox .it{border-top-color:#5a4715}
+html[data-tema="oscuro"] .gr-prox .it .q{color:#f3e4c2}
+html[data-tema="oscuro"] .gr-prox .it .t{background:#4a3a12;color:#f0cd7f}
+html[data-tema="oscuro"] .gr-prox .it .f{color:#c4a96f}
+html[data-tema="oscuro"] .gr-prox .it .c{color:#f0cd7f}
 html[data-tema="oscuro"] .gr-prox .it.urg .c{color:#ff9fae}
 /* ---------- calendario: eventos institucionales ---------- */
 .cal-dia.enrango{background:var(--suave)}
@@ -506,6 +516,40 @@ html[data-tema="oscuro"] .sim-corr.libre{background:#3a2c08;border-color:#7a5c12
 .tile b{display:block;font-size:26px;color:var(--petrol);font-weight:800}
 .tile span{font-size:12px;color:var(--gris);font-weight:700}
 .tile .mini-borde{height:4px;border-radius:99px;margin-top:8px}
+/* ---------- métricas ---------- */
+.tile-cab{display:flex;align-items:baseline;gap:10px}
+.tile-cab b{display:inline-block}
+.met-link{border:none;background:none;color:var(--acento);font-weight:800;font-size:12px;
+  font-family:inherit;padding:0 0 1px;border-bottom:1px dashed var(--acento);white-space:nowrap}
+.met-link:hover{color:var(--petrol);border-bottom-color:var(--petrol)}
+.met-panel{margin-bottom:18px}
+.met-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
+  padding:15px 17px;box-shadow:var(--sombra);margin-bottom:12px}
+.met-caja h4{color:var(--petrol);font-size:14px;font-weight:800;margin:0 0 2px}
+.met-q{color:var(--gris);font-size:11.5px;font-weight:600;margin-bottom:11px}
+.met-dos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.met-dos .met-caja{margin-bottom:12px}
+.met-fila{display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-top:1px solid var(--linea);font-size:13px}
+.met-fila:first-of-type{border-top:none}
+.met-fila .nom{font-weight:700;color:var(--petrol);margin-right:auto;min-width:0;overflow-wrap:anywhere}
+.met-fila .val{font-weight:800;color:var(--petrol);white-space:nowrap}
+.met-chip{font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 7px;
+  background:var(--suave);color:var(--muted);white-space:nowrap;flex:none}
+.met-barra{height:6px;border-radius:99px;background:var(--linea);width:110px;flex:none;overflow:hidden}
+.met-barra i{display:block;height:100%;border-radius:99px}
+.met-histo{display:flex;align-items:flex-end;gap:7px;height:108px}
+.met-histo .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+  height:100%;justify-content:flex-end}
+.met-histo .b{width:100%;border-radius:4px 4px 0 0;background:var(--acento);min-height:2px}
+.met-histo .b.cero{background:var(--linea)}
+.met-histo .n{font-size:10.5px;font-weight:800;color:var(--gris)}
+.met-histo .c{font-size:10px;font-weight:700;color:var(--muted);height:12px}
+.met-vacio{background:var(--blanco);border:1px dashed var(--borde);border-radius:12px;
+  padding:16px 18px;color:var(--gris);font-size:13px;font-weight:600;margin-bottom:12px}
+.met-pie{color:var(--gris);font-size:11.5px;font-weight:600;line-height:1.6;
+  padding:11px 2px 0;border-top:1px dashed var(--borde)}
+@media(max-width:700px){ .met-dos{grid-template-columns:1fr} }
 .fila-lista{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--linea);font-size:13.5px}
 .fila-lista .nom{font-weight:700;color:var(--petrol);margin-right:auto}
 /* ---------- notas ---------- */
@@ -828,6 +872,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
   <div id="vista-avance" hidden>
     <h2>Mi avance</h2>
     <div class="tiles" id="tilesAvance"></div>
+    <div id="panelMetricas" hidden></div>
     <div class="panel" style="margin-bottom:16px">
       <div class="cab"><h3>Qué te conviene hacer ahora</h3>
         <small style="color:var(--gris);font-weight:600">ordenado por cuántas materias te destraba</small></div>
@@ -846,7 +891,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.14 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.19 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -1986,6 +2031,115 @@ $("#btnCorrel").onclick=()=>{
 };
 
 /* ================= AVANCE ================= */
+/* ================= MÉTRICAS =================
+   Un panel que se despliega desde el promedio. Todo sale de lo que ya está
+   cargado —notas, estados, aplazos y el plan—, así que no pide nada nuevo ni
+   sale del dispositivo.
+
+   Lo que NO hay: ritmo por cuatrimestre, proyección de egreso y evolución del
+   promedio. Las tres necesitan saber CUÁNDO se aprobó cada materia, y eso hoy
+   no se guarda: sólo el estado y la nota. */
+let metricasAbierto = false;
+
+/* Cuántas materias se destrabarían al aprobar cada pendiente. No alcanza con
+   contar las que la tienen de correlativa: lo que importa es cuáles pasarían a
+   PODER cursarse, que es lo accionable. Por eso se simula la aprobación. */
+function metDestraban(){
+  const pend = MATERIAS.filter(m => !aprobada(m.o));
+  const bloqueadas = MATERIAS.filter(m =>
+    ["sin","desaprobada"].includes(est(m.o)) && !puedeCursar(m.o));
+  const out = [];
+  for (const m of pend){
+    let n = 0;
+    for (const x of bloqueadas){
+      if (x.o === m.o) continue;
+      const c = CORR[x.o] || { c:[], a:[] };
+      // ¿esta materia la traba, y es lo único que le falta?
+      if (!c.c.includes(m.o) && !c.a.includes(m.o)) continue;
+      const faltaCur = c.c.filter(y => y !== m.o && !cursadaOk(y));
+      const faltaApr = c.a.filter(y => y !== m.o && !aprobada(y));
+      if (!faltaCur.length && !faltaApr.length) n++;
+    }
+    if (n) out.push({ m, n });
+  }
+  return out.sort((a,b) => b.n - a.n || a.m.o - b.m.o);
+}
+
+function metricasHTML(){
+  const conNota = MATERIAS.filter(m => aprobada(m.o) && ST.notas[m.o] != null);
+  const totApl  = MATERIAS.reduce((t,m) => t + (ST.aplazos[m.o]||0), 0);
+  const oblig   = MATERIAS.filter(m => !m.electiva);
+
+  /* ---- qué destraba cada pendiente ---- */
+  const des = metDestraban().slice(0, 6);
+  const bloqDes = !des.length ? "" : `<div class="met-caja">
+    <h4>🔓 Qué destraba cada materia pendiente</h4>
+    <div class="met-q">Cuántas materias pasarías a poder cursar al aprobar cada una.</div>
+    ${des.map((d,i) => `<div class="met-fila">
+      <span class="nom">${escHTML(d.m.nombre)}</span>
+      ${i===0 && d.n>1 ? `<span class="met-chip">cuello de botella</span>` : ""}
+      <span class="val">habilita ${d.n}</span></div>`).join("")}
+  </div>`;
+
+  /* ---- distribución de notas ---- */
+  const cuenta = {};
+  for (let n = 4; n <= 10; n++) cuenta[n] = 0;
+  for (const m of conNota){ const n = Math.round(ST.notas[m.o]); if (cuenta[n] != null) cuenta[n]++; }
+  const maxC = Math.max(1, ...Object.values(cuenta));
+  const bloqHist = !conNota.length ? "" : `<div class="met-caja">
+    <h4>📊 Distribución de notas</h4>
+    <div class="met-q">El promedio solo no distingue notas parejas de extremos.</div>
+    <div class="met-histo">${Object.entries(cuenta).map(([n,c]) => `<div class="col">
+      <span class="c">${c||""}</span>
+      <div class="b${c?"":" cero"}" style="height:${c?Math.round(100*c/maxC):0}%"></div>
+      <span class="n">${n}</span></div>`).join("")}</div>
+  </div>`;
+
+  /* ---- promedio por nivel ---- */
+  const porNivel = NIVELES.map(niv => {
+    const ms = conNota.filter(m => !m.electiva && m.nivel === niv);
+    return { niv, n: ms.length, prom: ms.length ? ms.reduce((t,m)=>t+ST.notas[m.o],0)/ms.length : null };
+  }).filter(x => x.n);
+  const color = p => p >= 7.5 ? "var(--verde)" : p >= 6.5 ? "var(--ambar)" : "var(--rojo)";
+  const bloqNivel = porNivel.length < 2 ? "" : `<div class="met-caja">
+    <h4>📈 Promedio por nivel</h4>
+    <div class="met-q">Si el rendimiento cae al subir de nivel, se ve acá.</div>
+    ${porNivel.map(x => `<div class="met-fila">
+      <span class="nom">Nivel ${romano(x.niv)}</span>
+      <span class="met-barra"><i style="width:${Math.round((x.prom-4)/6*100)}%;background:${color(x.prom)}"></i></span>
+      <span class="val">${x.prom.toFixed(2)}</span></div>`).join("")}
+  </div>`;
+
+  /* ---- avance por nivel ---- */
+  const avNivel = NIVELES.map(niv => {
+    const ms = oblig.filter(m => m.nivel === niv);
+    return { niv, a: ms.filter(m=>aprobada(m.o)).length, t: ms.length };
+  }).filter(x => x.t);
+  const bloqAvance = `<div class="met-caja">
+    <h4>🎯 Avance por nivel</h4>
+    <div class="met-q">Dónde estás parado, que el total solo no dice.</div>
+    ${avNivel.map(x => `<div class="met-fila">
+      <span class="nom">Nivel ${romano(x.niv)}</span>
+      <span class="met-barra"><i style="width:${Math.round(100*x.a/x.t)}%;background:${x.a===x.t?"var(--verde)":"var(--acento)"}"></i></span>
+      <span class="val">${x.a}/${x.t}</span></div>`).join("")}
+  </div>`;
+
+  /* Sin notas cargadas igual hay qué mostrar —qué destraba cada materia y el
+     avance salen del plan—, así que en vez de vaciar el panel se avisa qué
+     bloques faltan y por qué. */
+  const sinNotas = !conNota.length ? `<div class="met-vacio">
+    Cargá la nota de tus finales aprobados y se suman la <b>distribución de notas</b>
+    y el <b>promedio por nivel</b>.</div>` : "";
+  return `<div class="met-panel">
+    ${sinNotas}
+    ${bloqDes}
+    <div class="met-dos">${bloqHist}${bloqNivel}</div>
+    ${bloqAvance}
+    <div class="met-pie">⏳ Con un campo de <b>mes y año de aprobación</b> se podrían sumar materias por
+    cuatrimestre, proyección de egreso y evolución del promedio. Hoy sólo se guarda el estado y la nota.</div>
+  </div>`;
+}
+
 function renderAvance(){
   const oblig=MATERIAS.filter(m=>!m.electiva);
   const nAprob=oblig.filter(m=>aprobada(m.o)).length;
@@ -2005,10 +2159,26 @@ function renderAvance(){
   $("#tilesAvance").innerHTML=`
     <div class="tile"><b>${nAprob}/${oblig.length}</b><span>obligatorias aprobadas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--verde) ${100*nAprob/oblig.length}%,var(--track) 0)"></div></div>
     <div class="tile"><b>${Math.round(100*hsAprob/hsTot)}%</b><span>de la carga horaria</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--acento) ${100*hsAprob/hsTot}%,var(--track) 0)"></div></div>
-    <div class="tile" title="Promedio de las notas de finales aprobados${totApl?". «c/aplazos» cuenta cada aplazo como un 2.":""}"><b>${promTxt}</b><span>promedio · ${promSub}</span><div class="mini-borde" style="background:var(--verde)"></div></div>
+    <div class="tile" title="Promedio de las notas de finales aprobados${totApl?". «c/aplazos» cuenta cada aplazo como un 2.":""}">
+      <div class="tile-cab"><b>${promTxt}</b>
+        <button class="met-link" id="verMetricas" aria-expanded="${metricasAbierto}">Métricas</button></div>
+      <span>promedio · ${promSub}</span><div class="mini-borde" style="background:var(--verde)"></div></div>
+    ${conNota.length+totApl ? `<div class="tile" title="Finales aprobados sobre el total de intentos, contando los aplazos que cargaste">
+      <b>${Math.round(100*conNota.length/(conNota.length+totApl))}%</b>
+      <span>aprobados en primera</span><div class="mini-borde" style="background:var(--cyan)"></div></div>` : ""}
+    <div class="tile"><b>${rendibles.length}</b><span>finales rendibles hoy</span><div class="mini-borde" style="background:var(--magenta)"></div></div>
     <div class="tile"><b>${nReg}</b><span>finales pendientes</span><div class="mini-borde" style="background:var(--ambar)"></div></div>
     <div class="tile"><b>${nCur}</b><span>cursando ahora</span><div class="mini-borde" style="background:var(--cyan)"></div></div>
     ${ELECTIVAS_HS?`<div class="tile"><b>${electivasHs()}/${ELECTIVAS_HS}</b><span>hs de electivas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--magenta) ${100*electivasHs()/ELECTIVAS_HS}%,var(--track) 0)"></div></div>`:""}`;
+  /* El panel va debajo de las fichas, no adentro: ocupa el ancho completo. */
+  const pm = $("#panelMetricas");
+  if (pm){
+    pm.hidden = !metricasAbierto;
+    pm.innerHTML = metricasAbierto ? metricasHTML() : "";
+  }
+  const bm = $("#verMetricas");
+  if (bm) bm.onclick = () => { metricasAbierto = !metricasAbierto; renderAvance(); };
+
   renderMesas();
   $("#listaRendibles").innerHTML = rendibles.length
     ? rendibles.map(m=>{const d=destraba(m.o);return `<div class="fila-lista"><span class="nom">${m.nombre}</span>
