@@ -540,10 +540,32 @@ html[data-tema="oscuro"] .sim-corr.libre{background:#3a2c08;border-color:#7a5c12
 .met-barra i{display:block;height:100%;border-radius:99px}
 .met-histo{display:flex;align-items:flex-end;justify-content:flex-start;gap:7px;height:108px}
 .met-histo .col{flex:1 1 0;max-width:62px;display:flex;flex-direction:column;align-items:center;gap:5px;
-  height:100%;justify-content:flex-end}
-.met-histo .b{width:100%;border-radius:4px 4px 0 0;background:var(--acento);min-height:2px}
+  height:100%;justify-content:flex-end;border:none;background:none;font-family:inherit;
+  padding:0 3px 2px;border-radius:8px;cursor:pointer;transition:background .12s}
+.met-histo .b{display:block;width:100%;border-radius:4px 4px 0 0;background:var(--acento);
+  min-height:2px;transition:opacity .12s}
 .met-histo .n{font-size:10.5px;font-weight:800;color:var(--gris)}
 .met-histo .c{font-size:10px;font-weight:700;color:var(--muted);height:12px}
+/* Mientras hay una barra elegida las demás se apagan, así se ve de una cuál es. */
+.met-histo.eligiendo .col:not(.sel) .b{opacity:.3}
+.met-histo.eligiendo .col:not(.sel):hover .b{opacity:.6}
+.met-histo .col:hover{background:var(--hover)}
+.met-histo .col.sel{background:var(--hover)}
+.met-histo .col.sel .n,.met-histo .col.sel .c{color:var(--petrol)}
+.met-ayuda{margin-top:12px;padding-top:10px;border-top:1px dashed var(--borde);
+  color:var(--gris);font-size:11.5px;font-weight:600}
+.met-lista{margin-top:12px;padding-top:10px;border-top:1px dashed var(--borde)}
+.met-lista .cab{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;
+  color:var(--petrol);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.met-x{margin-left:auto;border:none;background:none;color:var(--gris);cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:800;padding:2px 5px;border-radius:6px;line-height:1}
+.met-x:hover{background:var(--suave);color:var(--petrol)}
+.met-lista .it{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;
+  border-bottom:1px solid var(--linea)}
+.met-lista .it:last-child{border-bottom:none}
+.met-lista .it .nom{font-weight:700;color:var(--texto);margin-right:auto}
+.met-lista .it .niv{font-size:10.5px;font-weight:800;color:var(--muted);
+  background:var(--suave);border-radius:5px;padding:1px 7px;white-space:nowrap;flex:none}
 .met-vacio{background:var(--blanco);border:1px dashed var(--borde);border-radius:12px;
   padding:16px 18px;color:var(--gris);font-size:13px;font-weight:600;margin-bottom:12px}
 .met-pie{color:var(--gris);font-size:11.5px;font-weight:600;line-height:1.6;
@@ -890,7 +912,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.21 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.10.22 · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -2043,6 +2065,9 @@ $("#btnCorrel").onclick=()=>{
    promedio. Las tres necesitan saber CUÁNDO se aprobó cada materia, y eso hoy
    no se guarda: sólo el estado y la nota. */
 let metricasAbierto = false;
+/* Barra del histograma elegida. null = ninguna; se limpia al cerrar el panel
+   o si esa nota deja de existir (borraste la última materia que la tenía). */
+let notaSel = null;
 
 /* Cuántas materias se destrabarían al aprobar cada pendiente. No alcanza con
    contar las que la tienen de correlativa: lo que importa es cuáles pasarían a
@@ -2066,6 +2091,22 @@ function metDestraban(){
     if (n) out.push({ m, n });
   }
   return out.sort((a,b) => b.n - a.n || a.m.o - b.m.o);
+}
+
+/* Repinta sólo el panel. Al elegir una barra no hace falta rehacer toda la
+   pantalla de Mi avance: si lo hiciéramos, la página saltaría al tope. */
+function pintarMetricas(){
+  const pm = $("#panelMetricas"); if (!pm) return;
+  pm.hidden = !metricasAbierto;
+  pm.innerHTML = metricasAbierto ? metricasHTML() : "";
+  if (!metricasAbierto) return;
+  pm.querySelectorAll(".met-histo .col").forEach(b => b.onclick = () => {
+    const n = +b.dataset.nota;
+    notaSel = (notaSel === n) ? null : n;   // volver a tocarla la deselecciona
+    pintarMetricas();
+  });
+  const x = pm.querySelector("#metCerrarNota");
+  if (x) x.onclick = () => { notaSel = null; pintarMetricas(); };
 }
 
 function metricasHTML(){
@@ -2092,13 +2133,30 @@ function metricasHTML(){
   }
   const notasUsadas = Object.keys(cuenta).map(Number).sort((a,b) => a-b);
   const maxC = Math.max(1, ...Object.values(cuenta));
+  if (notaSel != null && !cuenta[notaSel]) notaSel = null;
+  const conEsaNota = notaSel == null ? []
+    : conNota.filter(m => Math.round(ST.notas[m.o]) === notaSel)
+             .sort((a,b) => a.nivel - b.nivel || a.o - b.o);
+  const detalleNota = notaSel == null
+    ? `<div class="met-ayuda">Tocá una barra para ver qué materias sacaste con esa nota.</div>`
+    : `<div class="met-lista">
+        <div class="cab">${conEsaNota.length} materia${conEsaNota.length>1?"s":""} con ${notaSel}
+          <button class="met-x" id="metCerrarNota" title="Quitar la selección">✕</button></div>
+        ${conEsaNota.map(m => `<div class="it">
+          <span class="nom">${escHTML(m.nombre)}</span>
+          <span class="niv">${m.electiva ? "Electiva" : "Nivel " + romano(m.nivel)}</span>
+        </div>`).join("")}
+      </div>`;
   const bloqHist = !notasUsadas.length ? "" : `<div class="met-caja">
     <h4>📊 Distribución de notas</h4>
     <div class="met-q">El promedio solo no distingue notas parejas de extremos.</div>
-    <div class="met-histo">${notasUsadas.map(n => `<div class="col">
+    <div class="met-histo${notaSel!=null?" eligiendo":""}">${notasUsadas.map(n => `<button type="button"
+      class="col${n===notaSel?" sel":""}" data-nota="${n}" aria-pressed="${n===notaSel}"
+      title="Ver las materias con ${n}">
       <span class="c">${cuenta[n]}</span>
-      <div class="b" style="height:${Math.round(100*cuenta[n]/maxC)}%"></div>
-      <span class="n">${n}</span></div>`).join("")}</div>
+      <span class="b" style="height:${Math.round(100*cuenta[n]/maxC)}%"></span>
+      <span class="n">${n}</span></button>`).join("")}</div>
+    ${detalleNota}
   </div>`;
 
   /* ---- promedio por nivel ---- */
@@ -2173,13 +2231,13 @@ function renderAvance(){
     <div class="tile"><b>${nCur}</b><span>Cursando ahora</span><div class="mini-borde" style="background:var(--cyan)"></div></div>
     ${ELECTIVAS_HS?`<div class="tile"><b>${electivasHs()}/${ELECTIVAS_HS}</b><span>Hs de electivas</span><div class="mini-borde" style="background:linear-gradient(90deg,var(--magenta) ${100*electivasHs()/ELECTIVAS_HS}%,var(--track) 0)"></div></div>`:""}`;
   /* El panel va debajo de las fichas, no adentro: ocupa el ancho completo. */
-  const pm = $("#panelMetricas");
-  if (pm){
-    pm.hidden = !metricasAbierto;
-    pm.innerHTML = metricasAbierto ? metricasHTML() : "";
-  }
+  pintarMetricas();
   const bm = $("#verMetricas");
-  if (bm) bm.onclick = () => { metricasAbierto = !metricasAbierto; renderAvance(); };
+  if (bm) bm.onclick = () => {
+    metricasAbierto = !metricasAbierto;
+    if (!metricasAbierto) notaSel = null;
+    renderAvance();
+  };
 
   renderMesas();
   $("#listaRendibles").innerHTML = rendibles.length
