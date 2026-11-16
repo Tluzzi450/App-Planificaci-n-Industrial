@@ -98,6 +98,38 @@ html[data-tema="oscuro"] .logo-login svg .st1{fill:#fff}
 .btn.primario{background:var(--marca);border-color:var(--marca);color:#fff}
 .btn.primario:hover{background:var(--petrol-osc)}
 .btn.peligro:hover{border-color:var(--rojo);color:var(--rojo);background:#fff2f4}
+/* ---------- menú de cuenta ---------- */
+.cuenta{position:relative;flex:none}
+.btn.ava{display:inline-flex;align-items:center;gap:5px;padding:4px 8px 4px 4px;border-radius:999px}
+.btn.ava>span{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;
+  border-radius:50%;background:var(--suave);color:var(--petrol);font-size:11.5px;font-weight:800;
+  letter-spacing:.3px;border:1px solid transparent}
+/* Semáforo de la sincronización. El color nunca va solo: la cabecera del menú
+   y el title del botón dicen lo mismo en palabras.
+   Blanco sobre estos tonos da 1.9:1, así que las iniciales van en oscuro. */
+.btn.ava.sync-ok>span{background:var(--verde);color:#1b3d0d;border-color:#5f9525}
+.btn.ava.sync-pend>span{background:var(--ambar);color:#4a3300;border-color:#b87b00}
+.btn.ava>i{font-style:normal;font-size:10px;color:var(--gris);line-height:1}
+.menu-cuenta{position:absolute;top:calc(100% + 8px);right:0;z-index:80;width:274px;
+  background:var(--blanco);border:1px solid var(--borde);border-radius:13px;padding:6px;
+  box-shadow:0 14px 38px rgba(0,0,0,.17);animation:mcEntra .12s ease-out}
+html[data-tema="oscuro"] .menu-cuenta{box-shadow:0 14px 38px rgba(0,0,0,.5)}
+@keyframes mcEntra{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.menu-cuenta[hidden]{display:none}
+.mc-cab{padding:11px 11px 10px}
+.mc-cab .nom{font-weight:800;color:var(--petrol);font-size:14px;line-height:1.25}
+.mc-cab .mail{color:var(--muted);font-size:12px;font-weight:600;word-break:break-all;margin-top:1px}
+.mc-cab .est{color:var(--muted);font-size:11.5px;font-weight:600;margin-top:7px}
+.mc-gr{border-top:1px solid var(--linea);padding:5px 0 4px}
+.menu-cuenta .btn{display:block;width:100%;text-align:left;border:1px solid transparent;
+  background:none;padding:8px 11px;border-radius:8px;font-size:13.5px;font-weight:600}
+.menu-cuenta .btn:hover{background:var(--hover);border-color:transparent}
+.menu-cuenta .btn.peligro{color:#c2152f}
+html[data-tema="oscuro"] .menu-cuenta .btn.peligro{color:#ff7d8f}
+.menu-cuenta .btn.peligro:hover{background:#fff2f4;border-color:transparent}
+html[data-tema="oscuro"] .menu-cuenta .btn.peligro:hover{background:#3d1620}
+/* el atributo hidden tiene que seguir ganando sobre el display de arriba */
+.menu-cuenta .btn[hidden]{display:none}
 .franja{height:5px;display:flex}
 .franja i{flex:1}
 .franja i:nth-child(1){background:linear-gradient(90deg,transparent,var(--cyan))}
@@ -664,10 +696,11 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
   .head-tit h1{font-size:15px}
   .head-tit small{display:block;font-size:11px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .head-acc{flex-basis:100%;gap:6px;justify-content:flex-start;overflow-x:auto;
-    padding-bottom:2px;-webkit-overflow-scrolling:touch}
-  .head-acc::-webkit-scrollbar{display:none}
-  .head-acc .btn{flex:none;font-size:12px;padding:6px 10px}
+  /* Son dos botones: entran al lado del título y no necesitan fila propia.
+     Tampoco overflow, que recortaría el desplegable de la cuenta. */
+  .head-acc{gap:6px;margin-left:auto;flex-wrap:nowrap}
+  .head-acc>.btn{flex:none;font-size:12px;padding:6px 10px}
+  .menu-cuenta{width:min(274px,calc(100vw - 24px))}
   /* la barra de solapas ya se desplaza de costado: se le quita el recorte
      visual y se le da una pista de que hay más a la derecha */
   .nav-int{padding:0 4px;scrollbar-width:none}
@@ -769,13 +802,26 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
     </div>
     <div class="head-acc">
       <button class="btn" id="btnTema" title="Cambiar entre tema claro y oscuro">🌙</button>
-      <button class="btn" id="btnSync" title="Sincronizar tus datos entre dispositivos" hidden>☁ Sincronizar</button>
-      <button class="btn" id="btnExportar" title="Descarga tu estado como archivo JSON">⬇ Exportar</button>
-      <button class="btn" id="btnImportar" title="Carga un estado exportado previamente">⬆ Importar</button>
-      <input type="file" id="inpImportar" accept=".json" hidden>
-      <button class="btn peligro" id="btnReiniciar">Reiniciar</button>
-      <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo">📲</button>
-      <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄</button>
+      <div class="cuenta">
+        <button class="btn ava" id="btnCuenta" aria-haspopup="menu" aria-expanded="false"
+                aria-controls="menuCuenta" title="Tu cuenta y las opciones del plan"><span id="avaIni">··</span><i>▾</i></button>
+        <div class="menu-cuenta" id="menuCuenta" role="menu" hidden>
+          <div class="mc-cab" id="mcCab"></div>
+          <div class="mc-gr">
+            <button class="btn" id="btnSync" title="Sincronizar tus datos entre dispositivos" hidden>☁ Sincronización</button>
+            <button class="btn" id="btnExportar" title="Descarga tu estado como archivo JSON">⬇ Exportar plan</button>
+            <button class="btn" id="btnImportar" title="Carga un estado exportado previamente">⬆ Importar plan</button>
+            <input type="file" id="inpImportar" accept=".json" hidden>
+          </div>
+          <div class="mc-gr">
+            <button class="btn" id="btnInstalarApp" title="Instalar la app en este dispositivo">📲 Instalar la app</button>
+            <button class="btn" id="btnActualizarApp" title="Buscar una versión nueva del planificador">🔄 Buscar actualización</button>
+          </div>
+          <div class="mc-gr">
+            <button class="btn peligro" id="btnReiniciar">↺ Reiniciar el plan…</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="franja"><i></i><i></i><i></i><i></i><i></i></div>
@@ -912,7 +958,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.10.22 · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.11.16b · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -1018,8 +1064,16 @@ function chipsOrigen(c){
   return s;
 }
 
+/* Las básicas (Álgebra, Análisis I, Física I, Química…) se dictan en varias
+   carreras y la web de la Facultad publica todas juntas: las cátedras con
+   código de una letra, por ejemplo, son de Electrónica. Acá queda sólo lo de
+   esta carrera. Una comisión sin `carrera` viene de un pegado de horarios, que
+   ya filtra al importar, así que pasa. */
+const esDeMiCarrera = c => !c.carrera || c.carrera === CARRERA.horarios.carrera;
 function construirComisiones(arr){
-  return arr.map((c,i)=>({...c,id:i,orden:porNombre[norm(c.materia)]})).filter(c=>c.orden!==undefined);
+  return arr.filter(esDeMiCarrera)
+            .map((c,i)=>({...c,id:i,orden:porNombre[norm(c.materia)]}))
+            .filter(c=>c.orden!==undefined);
 }
 let COMISIONES = construirComisiones(COMISIONES_RAW.comisiones);
 // Comisiones manuales (materias cursadas en otra regional), definidas por el usuario.
@@ -1055,6 +1109,11 @@ function cargar(){ try{ const raw=localStorage.getItem(CLAVE); if(raw){ const d=
   delete ST.misGrupos; delete ST.ordenSolapas;
   delete ST.pinPlegado; delete ST.pinFirma;   // el pin era plegable; ahora es un panel
   if(ST.horarios&&Array.isArray(ST.horarios.comisiones)&&ST.horarios.comisiones.length) COMISIONES=construirComisiones(ST.horarios.comisiones);
+  /* Quien ya había elegido una cátedra de otra carrera (antes se ofrecían) queda
+     con una clave que ya no corresponde a ninguna comisión: se suelta, si no la
+     materia aparece "cursando" y sin horario, sin explicación visible. */
+  for (const [o,k] of Object.entries(ST.grilla||{}))
+    if (!String(k).startsWith("M") && !COMISIONES.some(c=>c.orden===+o && claveCom(c)===k)) delete ST.grilla[o];
 } } }catch(e){} }
 function guardarLocal(){ try{ localStorage.setItem(CLAVE,JSON.stringify(ST)); }catch(e){} }
 function guardar(){
@@ -1806,7 +1865,6 @@ $("#btnOptimizar").onclick=()=>{
 
 /* ---- actualizar horarios pegando el código de la web FRH ---- */
 function parsearHorariosFRH(html){
-  const BASICAS=new Set(["analisis matematico i","fisica i","quimica general","algebra y geometria analitica"]);
   const nm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s*\((int|elec|elect|electiva)\.?\)\s*/gi," ").replace(/\s+/g," ").trim().toLowerCase();
   const DN={lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6};
   const hh=h=>{const m=(h||"").match(/(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):null;};
@@ -1816,8 +1874,10 @@ function parsearHorariosFRH(html){
     const at=n=>{const m=tag.match(new RegExp(n+'="(.*?)"'));return m?m[1].replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&nbsp;/g,' '):"";};
     let c; try{ c=JSON.parse(at("data-comision")); }catch(e){ continue; }
     const carrera=at("data-carrera-nombre"), curso=(c["Curso"]||"").trim(), materia=(c["Nombre Materia"]||"").replace(/\s+/g," ").trim();
-    const esDeLaCarrera=carrera===HOR.carrera, esIng=RE_INGLES.test(curso), esBas=BASICAS.has(nm(materia))&&/^[A-Z]{1,2}(-R)?$/.test(curso);
-    if(!(esDeLaCarrera||esIng||esBas)) continue;
+    /* Sólo esta carrera. Inglés es la excepción: la web lo publica con código
+       propio y sin carrera, y el regex ya se queda con los cursos de acá. */
+    const esDeLaCarrera=carrera===HOR.carrera, esIng=RE_INGLES.test(curso);
+    if(!(esDeLaCarrera||esIng)) continue;
     // el HTML pegado viene de afuera: se recorta todo antes de guardarlo
     bloques.push({curso:limpiar(curso,LARGO.curso), plan:limpiar(c["Plan"],10), materia:limpiar(materia,LARGO.materia),
       dictado:limpiar(c["Tipo Dictado"],4),
@@ -3316,7 +3376,7 @@ const navegadorIncrustado = () =>
    Sin esto, al tocar "Continuar con Google" el navegador tendría que esperar la
    descarga, para entonces ya perdió el gesto del usuario y bloquea la ventana. */
 const precargarSync = () => { if (syncPosible()) cargarFirebase().catch(()=>{}); };
-let FB=null, usuario=null, cortarEscucha=null, aplicandoRemoto=false, tPush=null, ultimaSync=null;
+let FB=null, usuario=null, cortarEscucha=null, aplicandoRemoto=false, tPush=null, ultimaSync=null, pushPendiente=false;
 
 async function cargarFirebase(){
   if (FB) return FB;
@@ -4055,11 +4115,12 @@ async function pushRemoto(){
   if (!usuario || aplicandoRemoto) return;
   await FB.F.setDoc(refUsuario(), {version:1, datos:JSON.stringify(ST),
     actualizado: ST.actualizado || new Date().toISOString(), dispositivo: dispositivo()});
-  ultimaSync=new Date(); pintarBotonSync();
+  ultimaSync=new Date(); pushPendiente=false; pintarBotonSync();
 }
 function programarPush(){
   if (!usuario || aplicandoRemoto) return;
   clearTimeout(tPush);
+  pushPendiente=true; pintarMenuCuenta();
   tPush=setTimeout(()=>pushRemoto().catch(()=>{}), 2500);   // agrupa ráfagas de cambios
 }
 function aplicarRemoto(d, aviso){
@@ -4145,12 +4206,80 @@ const ERRORES_FB={
 const explicar = e => ERRORES_FB[e && e.code] || (e && (e.message||e.code)) || "Error desconocido";
 
 function pintarBotonSync(){
-  const b=$("#btnSync"); if(!b) return;
-  b.hidden=!syncConfigurado();
-  if (usuario){ b.textContent="☁ "+(usuario.email? usuario.email.split("@")[0] : "Sincronizado");
-                b.title="Sesión iniciada como "+(usuario.email||"usuario"); }
-  else { b.textContent="☁ Sincronizar"; b.title="Iniciá sesión para sincronizar entre dispositivos"; }
+  const b=$("#btnSync");
+  if (b){
+    b.hidden=!syncConfigurado();
+    if (usuario){ b.textContent="☁ Tu sincronización";
+                  b.title="Sesión iniciada como "+(usuario.email||"usuario"); }
+    else { b.textContent="☁ Iniciar sesión"; b.title="Iniciá sesión para sincronizar entre dispositivos"; }
+  }
+  pintarMenuCuenta();
 }
+
+/* ================= MENÚ DE CUENTA =================
+   Todo lo que antes eran seis botones sueltos arriba a la derecha vive acá.
+   Afuera queda sólo el tema, que se toca a cada rato y no merece dos clics. */
+let menuCuentaAbierto=false;
+function inicialesCuenta(){
+  if (!usuario) return "··";
+  const n=(usuario.displayName||"").trim();
+  if (n){ const p=n.split(/\s+/).filter(Boolean);
+          return ((p[0][0]||"")+(p.length>1?(p[p.length-1][0]||""):"")).toUpperCase(); }
+  return (usuario.email||"?").slice(0,2).toUpperCase();
+}
+function estadoCuenta(){
+  if (!syncConfigurado()) return "Tus datos se guardan en este dispositivo.";
+  if (!usuario) return "Sin sesión: los datos se guardan sólo en este dispositivo.";
+  if (pushPendiente) return "Guardando cambios…";
+  /* hour12:false: es-AR devuelve "11:01 a. m." —con punto final— y al pegarle
+     otra frase quedaban dos puntos seguidos. */
+  if (ultimaSync) return "Sin cambios pendientes · "+
+    ultimaSync.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false});
+  return "Sincronizado con tu cuenta.";
+}
+/* "" = la app corre sin nube y no hay nada que semaforear. */
+function claseSync(){
+  if (!syncConfigurado()) return "";
+  if (!usuario || pushPendiente) return "sync-pend";
+  return "sync-ok";
+}
+function pintarMenuCuenta(){
+  const a=$("#avaIni"); if (a) a.textContent=inicialesCuenta();
+  const b=$("#btnCuenta");
+  if (b){
+    const cl=claseSync();
+    b.classList.toggle("sync-ok", cl==="sync-ok");
+    b.classList.toggle("sync-pend", cl==="sync-pend");
+    b.title = (usuario ? "Sesión iniciada como "+(usuario.email||"usuario")+". " : "")
+            + estadoCuenta();
+  }
+  const c=$("#mcCab"); if (!c) return;
+  const nom = usuario ? (usuario.displayName || (usuario.email||"").split("@")[0] || "Tu cuenta")
+                      : "Sin cuenta";
+  c.innerHTML = `<div class="nom">${escHTML(nom)}</div>`
+    + (usuario&&usuario.email ? `<div class="mail">${escHTML(usuario.email)}</div>` : "")
+    + `<div class="est">${escHTML(estadoCuenta())}</div>`;
+}
+function abrirMenuCuenta(v){
+  const m=$("#menuCuenta"), b=$("#btnCuenta"); if (!m||!b) return;
+  menuCuentaAbierto = (v===undefined) ? !menuCuentaAbierto : !!v;
+  if (menuCuentaAbierto) pintarMenuCuenta();
+  m.hidden=!menuCuentaAbierto;
+  b.setAttribute("aria-expanded", menuCuentaAbierto);
+}
+$("#btnCuenta").onclick = e => { e.stopPropagation(); abrirMenuCuenta(); };
+/* Cualquier opción del menú lo cierra: el onclick propio del botón ya corrió
+   cuando el evento llega hasta acá. */
+$("#menuCuenta").addEventListener("click", e => {
+  if (e.target.closest("button")) abrirMenuCuenta(false);
+});
+document.addEventListener("click", e => {
+  if (menuCuentaAbierto && !e.target.closest(".cuenta")) abrirMenuCuenta(false);
+});
+document.addEventListener("keydown", e => {
+  if (e.key==="Escape" && menuCuentaAbierto){ abrirMenuCuenta(false); $("#btnCuenta").focus(); }
+});
+$("#btnReiniciar").textContent = "↺ Reiniciar plan de "+CARRERA.nombre.replace(/^Ingenier[íi]a\s+/i,"")+"…";
 function abrirModalSync(){
   const m=$("#modal");
   if (!syncPosible()){
