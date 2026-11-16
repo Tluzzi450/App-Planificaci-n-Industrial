@@ -781,6 +781,43 @@ svg.atenuado .gnode{opacity:.28}
 svg.atenuado .gedge{opacity:.12}
 svg.atenuado .gnode.hl,svg.atenuado .gedge.hl{opacity:1}
 .gedge.hl{stroke:var(--petrol);stroke-width:2.2px}
+/* Las dos direcciones. Ninguno de los dos tonos se usa para estados —esos son
+   gris, cian, ámbar, verde y rojo—, así que el color de la línea no se confunde
+   con el color de la materia. */
+.gedge.hl.atras{stroke:var(--petrol);stroke-width:1.9px}
+.gedge.hl.adelante{stroke:var(--magenta);stroke-width:1.6px}
+.gnode.hl.atras rect{stroke:var(--petrol);stroke-width:2.4px}
+.gnode.hl.adelante rect{stroke:var(--magenta);stroke-width:2.4px}
+.gnode.fijada rect{stroke-width:3.4px;filter:drop-shadow(0 0 6px rgba(0,69,92,.45))}
+html[data-tema="oscuro"] .gnode.fijada rect{filter:drop-shadow(0 0 7px rgba(255,255,255,.4))}
+/* Lo que se habilitaría al aprobar la fijada. Va con .hl para ganarle en
+   especificidad a la regla de dirección, que si no le pisa el verde. */
+.gnode.hl.abre rect{stroke:var(--verde);stroke-width:3.2px;animation:gAbre 1.4s ease-in-out infinite}
+@keyframes gAbre{0%,100%{stroke-opacity:1}50%{stroke-opacity:.45}}
+.gnode.hl.simulada rect{stroke-dasharray:5 3}
+@media(prefers-reduced-motion:reduce){ .gnode.hl.abre rect{animation:none} }
+/* La onda. Cada flecha lleva pathLength="100", así que el guion mide lo mismo
+   en todas y el pulso tarda igual en recorrer una corta que una larga. */
+.gonda{fill:none;stroke-width:3.2px;stroke-linecap:round;pointer-events:none;
+  stroke-dasharray:8 92;animation:gFluir 1.9s linear infinite}
+.gonda.atras{stroke:var(--petrol)}
+.gonda.adelante{stroke:var(--magenta)}
+@keyframes gFluir{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){ .gonda{display:none} }
+/* ---------- barra de la materia fijada ---------- */
+#mapaBarra{background:var(--blanco);border:1px solid var(--borde);border-left:4px solid var(--petrol);
+  border-radius:11px;padding:11px 13px;margin-bottom:12px;box-shadow:var(--sombra)}
+#mapaBarra[hidden]{display:none}
+.mb-tit{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mb-tit b{color:var(--petrol);font-size:14.5px}
+.mb-chip{font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;white-space:nowrap}
+.mb-chip.atras{background:var(--suave);color:var(--petrol)}
+.mb-chip.adelante{background:#f6e6f7;color:#7d2f80}
+html[data-tema="oscuro"] .mb-chip.adelante{background:#3a1b3c;color:#e9b6ec}
+.mb-acc{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.mb-sim{margin-top:9px;padding-top:9px;border-top:1px dashed var(--borde);
+  font-size:12.5px;font-weight:600;color:var(--muted)}
+.mb-sim b{color:var(--petrol)}
 .leyenda-it{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--muted)}
 .leyenda-it i{width:13px;height:13px;border-radius:4px;display:inline-block;border:1.5px solid}
 #mapaCont text.gcab{fill:var(--petrol)}
@@ -934,8 +971,10 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
   <div id="vista-mapa" hidden>
     <h2>Mapa de correlativas</h2>
     <p style="margin-bottom:10px;color:var(--muted);max-width:860px">Cada materia coloreada por tu estado. Las líneas van de una materia a las que la requieren.
-      Pasá el mouse por una materia para resaltar todo lo que necesitás antes; hacé clic para ver el detalle y cambiar su estado.</p>
+      Tocá una materia y el mapa te muestra las dos direcciones: en azul lo que necesitás antes, en violeta lo que se destraba después.
+      Tocala de nuevo, o tocá fuera, para soltarla.</p>
     <div id="mapaLeyenda" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <div id="mapaBarra" hidden></div>
     <div class="panel" style="overflow:auto"><div id="mapaCont" style="padding:8px"></div></div>
   </div>
 
@@ -975,7 +1014,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.11.16c · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.11.16d · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -3242,14 +3281,14 @@ function renderMapa(){
   for(const m of nodosMapa){ const c=CORR[m.o]; if(!c) continue; const to=pos[m.o];
     for(const [arr,cls] of [[c.c,"gedge"],[c.a,"gedge apr"]]) for(const x of arr){ const fr=pos[x]; if(!fr||!to) continue;
       const x1=fr.x+NODW, y1=fr.y+NODH/2, x2=to.x, y2=to.y+NODH/2, mx=(x1+x2)/2;
-      edges+=`<path class="${cls}" data-a="${x}" data-b="${m.o}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"/>`; } }
+      edges+=`<path class="${cls}" data-a="${x}" data-b="${m.o}" pathLength="100" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"/>`; } }
   for(const m of nodosMapa){ const p=pos[m.o], col=colEst(est(m.o));
     // el sufijo "(Elec.)" es redundante: la columna ya lo dice, y roba lugar al nombre
     const base=m.electiva ? m.nombre.replace(/\s*\((Elec\.|Elect\.?)\)\s*$/i,"") : m.nombre;
     const nombre=base.length>22?base.slice(0,21)+"…":base;
     nodes+=`<g class="gnode${m.electiva?" gelec":""}" data-o="${m.o}" transform="translate(${p.x},${p.y})">
       <title>${m.nombre} — ${ESTADOS[est(m.o)].txt}${m.electiva?" (electiva)":""}</title>
-      <rect width="${NODW}" height="${NODH}" rx="8" fill="${col.f}" stroke="${col.s}"${m.electiva?' stroke-dasharray="5 3"':""}/>
+      <rect width="${NODW}" height="${NODH}" rx="8" fill="${col.f}" data-fill="${col.f}" stroke="${col.s}"${m.electiva?' stroke-dasharray="5 3"':""}/>
       <text class="gorden" x="7" y="14" fill="${col.t}">${m.o}</text>
       <text x="7" y="25" fill="${col.t}">${nombre}</text></g>`; }
   const svg=`<svg viewBox="0 0 ${W2} ${Hh}" width="${W2}" height="${Hh}" xmlns="http://www.w3.org/2000/svg">
@@ -3258,15 +3297,160 @@ function renderMapa(){
   const S=cont.querySelector("svg");
   S.querySelectorAll(".gnode").forEach(g=>{
     const o=+g.dataset.o;
-    g.onclick=()=>abrirModal(o);
-    g.onmouseenter=()=>{
+    g.onclick=ev=>{ ev.stopPropagation(); fijarEnMapa(mapaFijo===o?null:o); };
+    /* La vista previa al pasar el mouse sigue, pero sólo mientras no haya nada
+       fijado: si no, se pelea con la selección. En el celular no existe, y por
+       eso ahora lo importante está en el toque. */
+    g.onmouseenter=()=>{ if(mapaFijo!=null) return;
       const anc=ancestros(o); anc.add(o);
       S.classList.add("atenuado");
       S.querySelectorAll(".gnode").forEach(n=>n.classList.toggle("hl",anc.has(+n.dataset.o)));
       S.querySelectorAll(".gedge").forEach(e=>e.classList.toggle("hl",anc.has(+e.dataset.a)&&anc.has(+e.dataset.b)));
     };
-    g.onmouseleave=()=>{ S.classList.remove("atenuado"); S.querySelectorAll(".hl").forEach(n=>n.classList.remove("hl")); };
+    g.onmouseleave=()=>{ if(mapaFijo!=null) return;
+      S.classList.remove("atenuado"); S.querySelectorAll(".hl").forEach(n=>n.classList.remove("hl")); };
   });
+  S.onclick=()=>fijarEnMapa(null);     // tocar el vacío suelta
+  pintarMapa();
+}
+
+/* ================= MAPA: MATERIA FIJADA ================= */
+let mapaFijo=null, mapaSim=false;
+function fijarEnMapa(o){
+  const nuevo = mapaFijo!==o;
+  if (nuevo) mapaSim=false;            // la simulación es de la materia fijada
+  mapaFijo=o;
+  pintarMapa();
+  if (o!=null && nuevo) acercarBarraMapa();
+}
+/* En el celular el mapa es alto: si tocás una materia de la mitad para abajo,
+   la barra con los números queda arriba de todo y no te enterás. Se acerca sólo
+   cuando no se ve, y restando el alto real del encabezado, que es pegajoso. */
+function acercarBarraMapa(){
+  const b=$("#mapaBarra"); if(!b||b.hidden) return;
+  const enc=document.querySelector("header");
+  const alto=enc?enc.getBoundingClientRect().height:0;
+  const r=b.getBoundingClientRect();
+  if (r.top>=alto && r.bottom<=window.innerHeight) return;
+  try{ window.scrollTo({top:Math.max(0,window.scrollY+r.top-alto-10),behavior:"smooth"}); }catch(e){}
+}
+/* Hacia atrás: todo lo que hay que tener para llegar. Hacia adelante: todo lo
+   que depende de ella, directa o indirectamente. */
+function relacionMapa(o){
+  const atras=ancestros(o), adelante=descendientes(o);
+  return {atras, adelante};
+}
+/* A cuántos saltos está cada materia de la fijada. Sirve para escalonar la
+   onda: así el pulso se ve avanzar de a tramos en vez de latir todo junto. */
+function saltosDesde(o, haciaAdelante){
+  const prof={[o]:0}; let borde=[o];
+  while (borde.length){
+    const sig=[];
+    for (const x of borde) for (const m of MATERIAS){
+      const c=CORR[m.o]; if(!c) continue;
+      const hijo=c.c.includes(x)||c.a.includes(x);
+      const [de,a] = haciaAdelante ? [x,m.o] : [m.o,x];
+      if (hijo && prof[a]===undefined && prof[de]!==undefined){ prof[a]=prof[de]+1; sig.push(a); }
+    }
+    borde=sig;
+  }
+  return prof;
+}
+function pintarMapa(){
+  const cont=$("#mapaCont"); if(!cont) return;
+  const S=cont.querySelector("svg"); if(!S) return;
+  const barra=$("#mapaBarra");
+  S.querySelectorAll(".hl,.atras,.adelante,.fijada,.abre,.simulada").forEach(n=>{
+    n.classList.remove("hl","atras","adelante","fijada","abre","simulada");
+    n.style.opacity=""; delete n.dataset.salto;
+  });
+  // el relleno de la simulación se pinta a mano: acá se devuelve el del estado real
+  S.querySelectorAll(".gnode rect[data-fill]").forEach(r=>r.setAttribute("fill",r.dataset.fill));
+  const vieja=S.querySelector("#gOndas"); if(vieja) vieja.remove();
+
+  const m = mapaFijo==null ? null : MATERIAS.find(x=>x.o===mapaFijo);
+  if (!m){ mapaFijo=null; mapaSim=false; S.classList.remove("atenuado");
+           if(barra){ barra.hidden=true; barra.innerHTML=""; } return; }
+  if (aprobada(m.o)) mapaSim=false;    // simular lo ya aprobado no dice nada
+
+  const {atras, adelante}=relacionMapa(m.o);
+  const imp = aprobada(m.o) ? null : impactoDe(m.o);
+  const abre = new Set(mapaSim && imp ? [...imp.abreC, ...imp.abreR] : []);
+
+  S.classList.add("atenuado");
+  for (const n of S.querySelectorAll(".gnode")){
+    const o=+n.dataset.o;
+    if (o===m.o){
+      n.classList.add("hl","fijada");
+      /* Al simular, la materia se ve como aprobada pero con el borde cortado:
+         queda claro que es una hipótesis y no tu estado real. */
+      if (mapaSim){ n.classList.add("simulada");
+                    n.querySelector("rect").setAttribute("fill", colEst("aprobada").f); }
+    }
+    else if (atras.has(o)) n.classList.add("hl","atras");
+    else if (adelante.has(o)) n.classList.add("hl","adelante");
+    if (abre.has(o)) n.classList.add("hl","abre");
+  }
+  /* Una materia como Álgebra destraba 37: si todas las líneas se pintan igual
+     de fuerte, el mapa se vuelve una maraña. Lo directo va al 100% y la cascada
+     se va apagando a medida que se aleja. */
+  const pAdel=saltosDesde(m.o,true), pAtras=saltosDesde(m.o,false);
+  const tenue = d => Math.max(.2, 1 - Math.max(0,d)*.34).toFixed(2);
+  for (const n of S.querySelectorAll(".gnode.hl")){
+    const o=+n.dataset.o; if (o===m.o) continue;
+    const d = pAdel[o]!==undefined ? pAdel[o] : (pAtras[o]||1);
+    n.style.opacity = n.classList.contains("abre") ? "1" : tenue(d-1);
+  }
+  for (const e of S.querySelectorAll(".gedge")){
+    const a=+e.dataset.a, b=+e.dataset.b;
+    let d=null;
+    if (atras.has(a) && (atras.has(b)||b===m.o)){ e.classList.add("hl","atras"); d=(pAtras[b]||0); }
+    else if ((adelante.has(a)||a===m.o) && adelante.has(b)){ e.classList.add("hl","adelante"); d=(pAdel[a]||0); }
+    if (d!==null){ e.style.opacity=tenue(d); e.dataset.salto=d; }
+  }
+  /* La onda va en una capa aparte: así la línea de abajo queda entera y el
+     pulso se ve pasar por encima, en vez de ser el único trozo visible. */
+  const NS="http://www.w3.org/2000/svg";
+  const capa=document.createElementNS(NS,"g"); capa.id="gOndas";
+  const hondo=Math.max(0,...Object.values(pAtras));
+  const PASO=0.16, SALTOS_CON_ONDA=2;
+  for (const e of S.querySelectorAll(".gedge.hl")){
+    /* La onda sólo en los primeros saltos: más allá se vuelve ruido y son
+       decenas de líneas animándose a la vez. */
+    if (+e.dataset.salto > SALTOS_CON_ONDA) continue;
+    const c=e.cloneNode(false);
+    const haciaAdelante=e.classList.contains("adelante");
+    c.setAttribute("class","gonda "+(haciaAdelante?"adelante":"atras"));
+    /* Adelante arranca pegado a la materia y se aleja; atrás arranca en la
+       correlativa más lejana y termina llegando a ella. */
+    const d = haciaAdelante ? (pAdel[+e.dataset.a]||0)
+                            : (hondo-(pAtras[+e.dataset.a]||0));
+    c.style.animationDelay = (d*PASO).toFixed(2)+"s";
+    c.style.opacity = e.style.opacity;
+    capa.appendChild(c);
+  }
+  S.appendChild(capa);
+  pintarBarraMapa(m, atras, adelante, imp);
+}
+function pintarBarraMapa(m, atras, adelante, imp){
+  const barra=$("#mapaBarra"); if(!barra) return;
+  const faltan=[...atras].filter(x=>!aprobada(x)).length;
+  const quedan=[...adelante].filter(x=>!aprobada(x)).length;
+  barra.innerHTML=`<div class="mb-tit"><b>${escHTML(m.nombre)}</b>
+      <span class="mb-chip atras">Depende de ${atras.size}${faltan?` · te faltan ${faltan}`:" · todas aprobadas"}</span>
+      <span class="mb-chip adelante">Destraba ${adelante.size}${adelante.size&&quedan!==adelante.size?` · ${quedan} sin aprobar`:""}</span></div>
+    <div class="mb-acc">
+      ${imp?`<button class="btn${mapaSim?" primario":""}" id="mapaSimular">${mapaSim?"✓ Simulando que la aprobás":"¿Y si la apruebo?"}</button>`:""}
+      <button class="btn" id="mapaVer">Ver materia</button>
+      <button class="btn" id="mapaSoltar" style="margin-left:auto">✕ Soltar</button>
+    </div>
+    ${mapaSim&&imp?`<div class="mb-sim">${imp.abreC.length||imp.abreR.length
+      ? `Aprobándola se habilitan <b>${imp.abreC.length}</b> para cursar y <b>${imp.abreR.length}</b> para rendir — son las de borde verde.`
+      : "Aprobándola no se habilita ninguna materia nueva de inmediato."}</div>`:""}`;
+  barra.hidden=false;
+  const bs=$("#mapaSimular"); if(bs) bs.onclick=()=>{ mapaSim=!mapaSim; pintarMapa(); };
+  $("#mapaVer").onclick=()=>abrirModal(m.o);
+  $("#mapaSoltar").onclick=()=>fijarEnMapa(null);
 }
 
 /* ================= EXPORT / IMPORT / RESET ================= */
