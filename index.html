@@ -38,6 +38,8 @@
   --hover:#eef6f9; --suave:#eef2f5; --linea:#edf2f5; --track:#e2eaee; --muted:#5c7482;
   --verde-txt:#4d7a10;
   --cyan:#00D2F2; --ambar:#FFAB00; --verde:#8DCC3D; --rojo:#FF2644; --magenta:#B047B3;
+  /* los dos tipos de correlativa */
+  --corrC:#4a7fa5; --corrA:#b5531a;
   --sombra:0 1px 3px rgba(0,69,92,.10),0 4px 14px rgba(0,69,92,.06);
 }
 html[data-tema="oscuro"]{
@@ -45,6 +47,7 @@ html[data-tema="oscuro"]{
      institucional se reserva para bordes y acentos, donde no compite con el texto. */
   --petrol:#eaf2f6; --acento:#8ecde6; --petrol-osc:#00557a; --texto:#dde7ec; --gris:#8aa9b6;
   --link:#6fb4ff; --fondo:#0e1a20; --blanco:#16262e; --borde:#294550;
+  --corrC:#7fb3cf; --corrA:#e8914a;
   --hover:#1e3540; --suave:#1d3039; --linea:#223a45; --track:#223a45; --muted:#9db6c1;
   --verde-txt:#a8d95e;
   --sombra:0 1px 3px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.28);
@@ -775,17 +778,17 @@ html[data-tema="oscuro"] .campo input:focus{box-shadow:0 0 0 3px rgba(142,205,23
 .gnode rect{stroke-width:1.5px;transition:.12s}
 .gnode text{font-size:10.5px;font-weight:700;pointer-events:none}
 .gnode .gorden{font-size:8.5px;font-weight:800}
-.gedge{fill:none;stroke:var(--track);stroke-width:1.3px}
-.gedge.apr{stroke-dasharray:3 3}
+/* El color dice de qué tipo es la correlativa y el trazo lo repite, porque los
+   dos tonos tienen casi la misma luminosidad: en escala de grises, o para quien
+   no distingue colores, el guion es lo que los separa. */
+.gedge{fill:none;stroke:var(--corrC);stroke-width:1.4px;opacity:.45}
+.gedge.apr{stroke:var(--corrA);stroke-dasharray:6 4}
 svg.atenuado .gnode{opacity:.28}
 svg.atenuado .gedge{opacity:.12}
 svg.atenuado .gnode.hl,svg.atenuado .gedge.hl{opacity:1}
-.gedge.hl{stroke:var(--petrol);stroke-width:2.2px}
-/* Las dos direcciones. Ninguno de los dos tonos se usa para estados —esos son
-   gris, cian, ámbar, verde y rojo—, así que el color de la línea no se confunde
-   con el color de la materia. */
-.gedge.hl.atras{stroke:var(--petrol);stroke-width:1.9px}
-.gedge.hl.adelante{stroke:var(--magenta);stroke-width:1.6px}
+/* Resaltada cambia de grosor, no de color: el color ya está ocupado por el tipo
+   de correlativa. La dirección la llevan el anillo de la materia y el pulso. */
+.gedge.hl{stroke-width:2.1px}
 .gnode.hl.atras rect{stroke:var(--petrol);stroke-width:2.4px}
 .gnode.hl.adelante rect{stroke:var(--magenta);stroke-width:2.4px}
 .gnode.fijada rect{stroke-width:3.4px;filter:drop-shadow(0 0 6px rgba(0,69,92,.45))}
@@ -811,8 +814,8 @@ html[data-tema="oscuro"] .gnode.fijada rect{filter:drop-shadow(0 0 7px rgba(255,
 .mb-tit{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .mb-tit b{color:var(--petrol);font-size:14.5px}
 .mb-chip{font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;white-space:nowrap}
-.mb-chip.atras{background:var(--suave);color:var(--petrol)}
-.mb-chip.adelante{background:#f6e6f7;color:#7d2f80}
+.mb-chip.atras{background:var(--suave);color:var(--petrol);border:1.5px solid var(--petrol)}
+.mb-chip.adelante{background:#f6e6f7;color:#7d2f80;border:1.5px solid var(--magenta)}
 html[data-tema="oscuro"] .mb-chip.adelante{background:#3a1b3c;color:#e9b6ec}
 .mb-acc{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .mb-sim{margin-top:9px;padding-top:9px;border-top:1px dashed var(--borde);
@@ -971,8 +974,9 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
   <div id="vista-mapa" hidden>
     <h2>Mapa de correlativas</h2>
     <p style="margin-bottom:10px;color:var(--muted);max-width:860px">Cada materia coloreada por tu estado. Las líneas van de una materia a las que la requieren.
-      Tocá una materia y el mapa te muestra las dos direcciones: en azul lo que necesitás antes, en violeta lo que se destraba después.
-      Tocala de nuevo, o tocá fuera, para soltarla.</p>
+      El color de la línea dice qué tipo de correlativa es. Tocá una materia y el mapa separa las dos direcciones:
+      lo que necesitás antes y, en violeta, lo que se destraba después, con un pulso recorriendo el camino.
+      Los dos chips de la barra llevan esos mismos colores. Tocala de nuevo, o tocá fuera, para soltarla.</p>
     <div id="mapaLeyenda" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
     <div id="mapaBarra" hidden></div>
     <div class="panel" style="overflow:auto"><div id="mapaCont" style="padding:8px"></div></div>
@@ -1014,7 +1018,7 @@ footer{margin-top:40px;text-align:center;color:var(--gris);font-size:11.5px;line
 <footer>
   Datos: Ordenanzas UTN 1908 y 2141 (plan 2023) + horarios oficiales FRH (horarios.frh.utn.edu.ar).<br>
   Herramienta no oficial de ayuda a la planificación: confirmá siempre inscripciones y correlatividades en Autogestión.<br>
-  <span style="opacity:.75">Versión 2026.11.16d · <span id="pieModo"></span></span>
+  <span style="opacity:.75">Versión 2026.11.16e · <span id="pieModo"></span></span>
 </footer>
 <div id="pantallaLogin">
   <div class="login-izq">
@@ -3253,11 +3257,16 @@ const COL_OSCURO={sin:{f:"#22333c",s:"#445e6b",t:"#a9c0cc"},cursando:{f:"#0b3a47
 const colEst = k => (temaActual()==="oscuro"?COL_OSCURO:COL_CLARO)[k];
 function ancestros(o,acc){ acc=acc||new Set(); const c=CORR[o]; if(!c) return acc;
   for(const x of [...c.c,...c.a]) if(!acc.has(x)){ acc.add(x); ancestros(x,acc); } return acc; }
+/* Mismos valores que las variables --corrC y --corrA del CSS: la leyenda se
+   dibuja con atributos SVG, que no leen variables. */
+const COL_CORR={claro:{c:"#4a7fa5",a:"#b5531a"},oscuro:{c:"#7fb3cf",a:"#e8914a"}};
+const colCorr = () => COL_CORR[temaActual()==="oscuro"?"oscuro":"claro"];
 function renderMapa(){
+  const cc=colCorr();
   $("#mapaLeyenda").innerHTML=Object.entries({aprobada:"Aprobada",regular:"Regularizada",cursando:"Cursando",sin:"Sin cursar",desaprobada:"Desaprobada"})
     .map(([k,t])=>`<span class="leyenda-it"><i style="background:${colEst(k).f};border-color:${colEst(k).s}"></i>${t}</span>`).join("")
-    +`<span class="leyenda-it" style="margin-left:8px"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#c8d5db" stroke-width="1.3"/></svg>Correlativa de cursada</span>`
-    +`<span class="leyenda-it"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#c8d5db" stroke-width="1.3" stroke-dasharray="3 3"/></svg>Debe estar aprobada</span>`
+    +`<span class="leyenda-it" style="margin-left:8px"><svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="${cc.c}" stroke-width="2.4"/></svg>Correlativa de cursada</span>`
+    +`<span class="leyenda-it"><svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="${cc.a}" stroke-width="2.4" stroke-dasharray="6 4"/></svg>Debe estar aprobada</span>`
     +`<span class="leyenda-it" style="margin-left:8px"><i style="background:transparent;border-color:${colEst("sin").s};border-style:dashed"></i>Electiva</span>`;
   const oblig=MATERIAS.filter(m=>!m.electiva);
   /* Las electivas van en una columna propia a la derecha: no forman una secuencia
